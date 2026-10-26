@@ -3,6 +3,14 @@
 This is the template's robotnik_arm_task.py main loop, turned into a function so it can be
 called many times with a different target, starting pose and seed. The controllers themselves
 (robotnik_arm_control.py) are used unchanged: we are cloning the given expert, not a modified one.
+Verified: on the template's own scene this reproduces the template exactly (reached at 8.00 s).
+
+Three kinds of recording, all with the expert's CLEAN command as the label:
+    clean           the expert drives undisturbed
+    nudged          a held random offset is added to the executed command (--noise), so the robot
+                    drifts off the perfect path and the expert's corrections get recorded
+    kicked          brief sharp torque pulses while reaching (--kick), so recovery from unexpected
+                    arm MOTION gets recorded (fixed the late arm crashes)
 
 Usage from Python:
     from expert_episode import run_episode
@@ -76,7 +84,8 @@ def _classify_stop(message):
 
 
 def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz=100,
-                cmd_noise_std=0.0, use_gui=False, time_limit_s=None):
+                cmd_noise_std=0.0, noise_hold_s=0.3, nudge_when="always", kick_prob=0.0, kick_std=15.0,
+                use_gui=False, time_limit_s=None):
     """Run the expert once and (optionally) save the recording.
 
     Args:
@@ -89,6 +98,14 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         cmd_noise_std: noise added to the EXECUTED command (for recovery data, week 3).
                        The recorded label is always the expert's clean command.
                        Given as a fraction of each channel's limit (30 Nm torque, wheel speed).
+        noise_hold_s:  each nudge is held this long before a new one is drawn. Noise that changes
+                       every 1 ms averages out and barely moves the robot; held nudges push it
+                       genuinely off course, so the expert's corrections get recorded.
+        nudge_when:    "always", or "reach" = only nudge once the base has parked and the arm is
+                       reaching (more examples of fine corrections near the target).
+        kick_prob:     per-step chance (at 10 ms steps, while reaching) of a brief 50 ms torque kick that sets
+                       the arm MOVING, so the expert's recovery from unexpected motion gets recorded.
+        kick_std:      size of the kick, N*m (clipped by the torque limit).
         use_gui:       open the PyBullet window (slow; for watching one run).
         time_limit_s:  wall-clock safety limit; the run is stopped and marked "timeout".
 
@@ -195,6 +212,9 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
             "contact_ground", "contact_self",
         ]}
 
+        hold_steps = max(1, int(round(noise_hold_s / dt)))
+        nudge = np.zeros(11)
+        kick, kick_left, kick_count = np.zeros(7), 0, 0
         current_time = 0.0
         step = 0
         nav_done_time = None
@@ -203,6 +223,8 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         ee_dist_error = np.inf
         min_ee_error = np.inf
 
+        # Main loop, one iteration per 1 ms simulation step (identical in effect to the template's):
+        #   measure -> expert decides -> (optional nudge/kick) -> log -> apply -> stop check
         while True:
             # --- Measure -------------------------------------------------------------------
             base_pos = np.array(sim.GetBasePosition())
@@ -231,13 +253,26 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
                 reach_active=nav_done,
             )
 
-            # --- Optional noise on the executed command (labels stay clean) ---------------
+            # --- Optional nudge on the EXECUTED command. The label logged below stays the expert's
+            #     clean command, so the model learns "what the expert does here", not the noise.
             sent = np.concatenate((wheel_cmds, torque_arm))
-            if cmd_noise_std > 0:
-                sent = sent + rng.normal(0.0, cmd_noise_std, size=11) * noise_scale
+            if cmd_noise_std > 0 and (nudge_when == "always" or nav_done):
+                if step % hold_steps == 0:
+                    nudge = rng.normal(0.0, cmd_noise_std, size=11) * noise_scale
+                sent = sent + nudge
                 sent[4:] = np.clip(sent[4:], -arm_params.max_torque, arm_params.max_torque)
 
-            # --- Record BEFORE the stop check, so the last step is kept -------------------
+            # --- Optional velocity kick (reaching only): a short sharp torque pulse ----------
+            if kick_prob > 0 and nav_done:
+                if kick_left == 0 and step % 10 == 0 and rng.random() < kick_prob:
+                    kick, kick_left, kick_count = rng.normal(0.0, kick_std, size=7), 50, kick_count + 1
+                if kick_left > 0:
+                    sent = sent.copy()
+                    sent[4:] = np.clip(sent[4:] + kick, -arm_params.max_torque, arm_params.max_torque)
+                    kick_left -= 1
+
+            # --- Record BEFORE the stop check, so the last step is kept (the template logs after
+            #     it and so drops the final step). Every log_every-th step = 100 Hz by default.
             if step % log_every == 0:
                 tau_g = pin.computeGeneralizedGravity(dyn_model.pin_model, dyn_model.pin_data, q_pin)[6:13]
                 ground_hit = any(c[3] in checked_links for c in client.getContactPoints(bodyA=rid, bodyB=ground))
@@ -294,7 +329,8 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         outcome = "reached"
 
     # ------------------------------------------------------------------------------------------
-    # Package the recording
+    # Package the recording: float32 arrays + a JSON summary ("meta"), one .npz per run.
+    # Written to a temp file and renamed, so a half-written file never looks complete.
     # ------------------------------------------------------------------------------------------
     arrays = {}
     for k, v in log.items():
@@ -327,6 +363,9 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         "dt": float(dt),
         "log_every": int(log_every),
         "cmd_noise_std": float(cmd_noise_std),
+        "noise_hold_s": float(noise_hold_s) if cmd_noise_std > 0 else None,
+        "nudge_when": nudge_when if cmd_noise_std > 0 else None,
+        "kick_prob": float(kick_prob), "kick_std": float(kick_std), "n_kicks": int(kick_count),
         "max_steps": int(max_steps),
         "wall_time_s": float(time.time() - wall_start),
         "code_version": _git_hash(),

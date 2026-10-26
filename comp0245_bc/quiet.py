@@ -1,4 +1,4 @@
-"""Small helpers so the scripts fail politely and keep the console readable.
+"""Small helpers so the scripts fail politely and keep the console readable (no walls of red text).
 
 - quiet_native(): hides the simulator's own console spam (b3Warning, "No feet defined", ...).
   Set the environment variable ROBOENV_VERBOSE=1 to see it again when debugging.

@@ -4,7 +4,9 @@ Examples (from the RoboEnv pixi shell):
     python collect.py --start 0 --end 10                 # first 10 runs, to check things work
     python collect.py --start 0 --end 100 --workers 4    # person 1
     python collect.py --start 100 --end 200 --workers 4  # person 2, on another laptop
-    python collect.py --start 0 --end 50 --noise 0.05 --out data/runs_noisy   # recovery data (week 3)
+    python collect.py --start 10000 --end 10150 --noise 0.05 0.1 0.15 --out data/runs_nudged   # nudged runs
+    python collect.py --start 20000 --end 20100 --noise 0.05 0.1 --nudge-when reach --out data/runs_reach
+    python collect.py --start 30000 --end 30120 --kick 0.02 --out data/runs_kick      # velocity-recovery runs
 
 Safe to stop (Ctrl+C) and restart: runs whose file already exists are skipped.
 Simulator warnings are hidden; set ROBOENV_VERBOSE=1 to see them.
@@ -29,7 +31,7 @@ def _ignore_ctrl_c():
 
 
 def _one(args):
-    seed, out_dir, noise, time_limit = args
+    seed, out_dir, noise, time_limit, nudge_when, kick = args
     path = os.path.join(out_dir, f"run_{seed:05d}.npz")
     if os.path.exists(path):
         return seed, "skipped", None, None
@@ -37,7 +39,7 @@ def _one(args):
         from expert_episode import run_episode  # import inside the worker (Windows-safe)
         target, start = training_scene(seed)
         res = run_episode(target, start, seed, out_path=path, cmd_noise_std=noise,
-                          time_limit_s=time_limit)
+                          nudge_when=nudge_when, kick_prob=kick, time_limit_s=time_limit)
         return seed, res["meta"]["outcome"], res["meta"], None
     except Exception as exc:
         with open(os.path.join(out_dir, "failures.log"), "a", encoding="utf-8") as f:
@@ -51,7 +53,13 @@ def main():
     ap.add_argument("--end", type=int, required=True, help="last seed (exclusive)")
     ap.add_argument("--out", default=os.path.join(HERE, "data", "runs"), help="output folder")
     ap.add_argument("--workers", type=int, default=1, help="runs in parallel (about CPU cores - 1)")
-    ap.add_argument("--noise", type=float, default=0.0, help="command noise, fraction of limits")
+    ap.add_argument("--noise", type=float, nargs="+", default=[0.0],
+                    help="nudge strength as a fraction of each command's limit; several values = "
+                         "each run gets one of them in turn (by seed)")
+    ap.add_argument("--nudge-when", choices=["always", "reach"], default="always",
+                    help="reach = nudge only while the arm is reaching (fine-correction data)")
+    ap.add_argument("--kick", type=float, default=0.0,
+                    help="per-10ms chance of a 50 ms torque kick while reaching (velocity-recovery data), e.g. 0.02")
     ap.add_argument("--time-limit", type=float, default=900, help="wall-clock seconds per run")
     a = ap.parse_args()
 
@@ -60,7 +68,7 @@ def main():
         return
 
     os.makedirs(a.out, exist_ok=True)
-    jobs = [(s, a.out, a.noise, a.time_limit) for s in range(a.start, a.end)]
+    jobs = [(s, a.out, a.noise[s % len(a.noise)], a.time_limit, a.nudge_when, a.kick) for s in range(a.start, a.end)]
     counts, t0 = {}, time.time()
     print(f"Recording seeds {a.start}-{a.end - 1} into {a.out} with {a.workers} worker(s)")
 

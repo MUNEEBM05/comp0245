@@ -1,4 +1,4 @@
-"""Where targets and starting poses come from.
+"""Where targets and starting poses come from, for training runs and for the frozen benchmark.
 
 One place defines the ranges for both training data and the benchmark, so they can never
 drift apart. Each scene is generated from a single integer seed, so any run can be rebuilt.
@@ -60,3 +60,60 @@ def training_scene(seed):
     target = sample_target(rng)
     start = sample_start(rng)
     return target, start
+
+
+# ------------------------------------------------------------------------------------------
+# Benchmark scenes (generated once by make_benchmark.py, then frozen)
+# ------------------------------------------------------------------------------------------
+def _parking_goal(target):
+    """Where the expert parks for this target (same formula as the template)."""
+    standoff = float(np.interp(target[2], [0.1, 0.5, 1.1, 1.25], [0.80, 0.65, 0.65, 0.35]))
+    b = np.arctan2(target[1], target[0])
+    return target[:2] - standoff * np.array([np.cos(b), np.sin(b)])
+
+
+def benchmark_scene(tier, index):
+    """One frozen test scene. Each (tier, index) has its own seed in the benchmark block.
+
+    Tier 1  in-distribution: same ranges as training, unseen seeds.
+    Tier 2  out-of-distribution targets: higher (1.10-1.25 m) or farther (2.0-2.5 m) than training.
+    Tier 3  unusual starts: half start far (1-2 m) facing away from the parking spot,
+            half start close (0.3-0.7 m) to it, where the expert sometimes orbits.
+    Tier 4  disturbances: tier-1-like scenes plus sensor noise and a command delay. (A sideways shove
+            was tried and dropped: the template's expert never re-aligns once pushed off its heading
+            and orbits instead, so the EXPERT fails every shoved scene; see README.)
+    """
+    seed = BENCHMARK_SEED_OFFSET + 10_000 * tier + index
+    rng = np.random.default_rng(seed)
+    disturbance = {}
+    if tier == 1:
+        target, start = sample_target(rng), sample_start(rng)
+    elif tier == 2:
+        if index % 2 == 0:
+            target = sample_target(rng, z_range=OOD_TARGET_Z)          # too high
+        else:
+            target = sample_target(rng, r_range=OOD_TARGET_R)          # too far
+        start = sample_start(rng)
+    elif tier == 3:
+        target = sample_target(rng)
+        goal = _parking_goal(target)
+        if index % 2 == 0:                                            # far, facing away
+            x, y = _uniform_disc(rng, OOD_START_R)
+            away = np.arctan2(y - goal[1], x - goal[0])
+            yaw = away + rng.uniform(-0.5, 0.5)
+        else:                                                         # close to the parking spot
+            dx, dy = _uniform_disc(rng, (0.3, 0.7))
+            x, y = goal[0] + dx, goal[1] + dy
+            yaw = rng.uniform(-np.pi, np.pi)
+        start = np.array([x, y, (yaw + np.pi) % (2 * np.pi) - np.pi])
+    elif tier == 4:
+        target, start = sample_target(rng), sample_start(rng)
+        disturbance = {
+            "obs_noise": float(rng.choice([0.005, 0.01, 0.02])),   # std of sensor noise (m / rad / rad/s scaled)
+            "delay_steps": int(rng.choice([1, 2, 3, 4])),          # command arrives this many ms late (expert
+                                                                   # survives up to 4 ms; 6 ms crashes it)
+        }
+    else:
+        raise ValueError(f"unknown tier {tier}")
+    return {"tier": tier, "index": index, "seed": seed, "target": [float(v) for v in target],
+            "start_pose": [float(v) for v in start], "disturbance": disturbance}

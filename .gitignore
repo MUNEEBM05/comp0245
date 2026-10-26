@@ -1,0 +1,4 @@
+comp0245_bc/models
+comp0245_bc/data/
+__pycache__/
+*.log
