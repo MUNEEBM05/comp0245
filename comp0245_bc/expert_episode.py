@@ -5,23 +5,22 @@ called many times with a different target, starting pose and seed. The controlle
 (robotnik_arm_control.py) are used unchanged: we are cloning the given expert, not a modified one.
 Verified: on the template's own scene this reproduces the template exactly (reached at 8.00 s).
 
-Three kinds of recording, all with the expert's CLEAN command as the label:
+Four kinds of recording, all with the expert's CLEAN command as the label:
     clean           the expert drives undisturbed
     nudged          a held random offset is added to the executed command (--noise), so the robot
                     drifts off the perfect path and the expert's corrections get recorded
     kicked          brief sharp torque pulses while reaching (--kick), so recovery from unexpected
                     arm MOTION gets recorded (fixed the late arm crashes)
-
-Usage from Python:
-    from expert_episode import run_episode
-    result = run_episode(target=[0.0, 1.1, 0.5], start_pose=[0.0, 0.0, 0.0], seed=0,
-                         out_path="data/runs/run_00000.npz")
+    disturbed       sensor noise on the logged readings and/or a command delay (--obs-noise,
+                    --delay), as in benchmark tier 4. The expert still decides from the TRUE state
+                    (a privileged teacher), so the model learns the right action from noisy inputs
 """
 import json
 import os
 import platform
 import subprocess
 import time
+from collections import deque
 
 import numpy as np
 
@@ -38,7 +37,7 @@ from robotnik_arm_control import (
 )
 
 # ------------------------------------------------------------------------------------------
-# Constants copied from the template so the expert behaves exactly as given
+# Constants
 # ------------------------------------------------------------------------------------------
 CONF_FILE_NAME = "robotnik_arm.json"
 FIXED_FINGER_ANGLES = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
@@ -85,6 +84,7 @@ def _classify_stop(message):
 
 def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz=100,
                 cmd_noise_std=0.0, noise_hold_s=0.3, nudge_when="always", kick_prob=0.0, kick_std=15.0,
+                obs_noise=0.0, delay_steps=0,
                 use_gui=False, time_limit_s=None):
     """Run the expert once and (optionally) save the recording.
 
@@ -106,6 +106,10 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         kick_prob:     per-step chance (at 10 ms steps, while reaching) of a brief 50 ms torque kick that sets
                        the arm MOVING, so the expert's recovery from unexpected motion gets recorded.
         kick_std:      size of the kick, N*m (clipped by the torque limit).
+        obs_noise:     sensor noise (std) on the LOGGED readings, same model as tier 4 in rollout.py:
+                       sigma on base x, y, yaw and joint angles, 10*sigma on joint speeds. The expert
+                       itself still sees the true state, so the label is its correct command.
+        delay_steps:   the executed command reaches the robot this many 1 ms steps late (tier 4: 1-4).
         use_gui:       open the PyBullet window (slow; for watching one run).
         time_limit_s:  wall-clock safety limit; the run is stopped and marked "timeout".
 
@@ -115,10 +119,11 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
     target = np.asarray(target, dtype=float)
     start_pose = np.asarray(start_pose, dtype=float)
     rng = np.random.default_rng(seed)
+    obs_rng = np.random.default_rng([seed, 1])  # own stream: nudges and kicks stay as before
     wall_start = time.time()
 
     # --------------------------------------------------------------------------------------
-    # Simulation setup (as in the template)
+    # Simulation setup
     # --------------------------------------------------------------------------------------
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     with quiet_native():  # hide the simulator's start-up warnings (set ROBOENV_VERBOSE=1 to see them)
@@ -178,10 +183,7 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         dt = sim.GetTimeStep()
         log_every = max(1, int(round(1.0 / (log_hz * dt))))
 
-        # ----------------------------------------------------------------------------------
-        # Expert plan (as in the template). Note: the base goal is placed relative to the
-        # WORLD ORIGIN's view of the target, not relative to the robot's start.
-        # ----------------------------------------------------------------------------------
+        
         standoff = float(np.interp(target[2], STANDOFF_Z_POINTS, STANDOFF_POINTS))
         target_xy = target[:2]
         target_bearing = np.arctan2(target_xy[1], target_xy[0]) if np.linalg.norm(target_xy) > 1e-4 else 0.0
@@ -206,7 +208,7 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         noise_scale = np.concatenate([np.full(4, wheel_limit), np.full(7, arm_params.max_torque)])
 
         log = {k: [] for k in [
-            "t", "base_pos", "base_quat", "base_bearing", "q_mes", "qd_mes", "ee_pos", "target",
+            "t", "base_pos", "base_quat", "base_bearing", "q_mes", "qd_mes", "ee_pos", "ee_pos_true", "target",
             "phase", "nav_done", "q_des_arm", "qd_des_arm", "tau_gravity",
             "torque_arm", "wheel_cmds", "torque_arm_sent", "wheel_cmds_sent",
             "contact_ground", "contact_self",
@@ -215,6 +217,7 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         hold_steps = max(1, int(round(noise_hold_s / dt)))
         nudge = np.zeros(11)
         kick, kick_left, kick_count = np.zeros(7), 0, 0
+        delay = deque([np.zeros(11)] * int(delay_steps))
         current_time = 0.0
         step = 0
         nav_done_time = None
@@ -224,7 +227,7 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         min_ee_error = np.inf
 
         # Main loop, one iteration per 1 ms simulation step (identical in effect to the template's):
-        #   measure -> expert decides -> (optional nudge/kick) -> log -> apply -> stop check
+        #   measure -> expert decides -> (optional nudge/kick/delay) -> log -> apply -> stop check
         while True:
             # --- Measure -------------------------------------------------------------------
             base_pos = np.array(sim.GetBasePosition())
@@ -271,6 +274,11 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
                     sent[4:] = np.clip(sent[4:] + kick, -arm_params.max_torque, arm_params.max_torque)
                     kick_left -= 1
 
+            # --- Optional command delay (tier 4): the robot gets the command from delay_steps ago.
+            #     With delay_steps = 0 this hands back the same command, so nothing changes.
+            delay.append(sent)
+            sent = delay.popleft()
+
             # --- Record BEFORE the stop check, so the last step is kept (the template logs after
             #     it and so drops the final step). Every log_every-th step = 100 Hz by default.
             if step % log_every == 0:
@@ -280,13 +288,28 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
                     len(client.getClosestPoints(rid, rid, 0.0, linkIndexA=a, linkIndexB=b)) > 0
                     for a in checked_links for b in base_links
                 )
+                if obs_noise > 0:  # what a noisy sensor would have reported (true state unchanged)
+                    bp_seen = base_pos.copy()
+                    bp_seen[:2] += obs_rng.normal(0.0, obs_noise, 2)
+                    yaw_seen = base_bearing + obs_rng.normal(0.0, obs_noise)
+                    quat_seen = np.array(client.getQuaternionFromEuler([0.0, 0.0, yaw_seen]))
+                    q_seen = q_mes + obs_rng.normal(0.0, obs_noise, q_mes.shape)
+                    qd_seen = qd_mes + obs_rng.normal(0.0, 10 * obs_noise, qd_mes.shape)
+                    q_pin_seen = dyn_model.ReoderJoints2PinVec(np.concatenate((bp_seen, quat_seen, q_seen)), "pos")
+                    pin.forwardKinematics(dyn_model.pin_model, dyn_model.pin_data, q_pin_seen)
+                    pin.updateFramePlacements(dyn_model.pin_model, dyn_model.pin_data)
+                    ee_seen = dyn_model.pin_data.oMf[ee_frame_id].translation.copy()
+                else:
+                    bp_seen, quat_seen, yaw_seen = base_pos, base_ori, base_bearing
+                    q_seen, qd_seen, ee_seen = q_mes, qd_mes, ee_pos
                 log["t"].append(current_time)
-                log["base_pos"].append(base_pos)
-                log["base_quat"].append(base_ori)
-                log["base_bearing"].append(base_bearing)
-                log["q_mes"].append(q_mes)
-                log["qd_mes"].append(qd_mes)
-                log["ee_pos"].append(ee_pos)
+                log["base_pos"].append(bp_seen)
+                log["base_quat"].append(quat_seen)
+                log["base_bearing"].append(yaw_seen)
+                log["q_mes"].append(q_seen)
+                log["qd_mes"].append(qd_seen)
+                log["ee_pos"].append(ee_seen)
+                log["ee_pos_true"].append(ee_pos)
                 log["target"].append(target)
                 log["phase"].append(PHASE_CODES[phase_before])
                 log["nav_done"].append(nav_done)
@@ -366,6 +389,7 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         "noise_hold_s": float(noise_hold_s) if cmd_noise_std > 0 else None,
         "nudge_when": nudge_when if cmd_noise_std > 0 else None,
         "kick_prob": float(kick_prob), "kick_std": float(kick_std), "n_kicks": int(kick_count),
+        "obs_noise": float(obs_noise), "delay_steps": int(delay_steps),
         "max_steps": int(max_steps),
         "wall_time_s": float(time.time() - wall_start),
         "code_version": _git_hash(),
