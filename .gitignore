@@ -2,3 +2,5 @@ comp0245_bc/models
 comp0245_bc/data/
 __pycache__/
 *.log
+*.zip
+comp0245_bc/comp0245_data/
