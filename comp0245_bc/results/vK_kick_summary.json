@@ -1,16 +1,28 @@
 {
- "4": {
+ "2": {
   "scenes": 50,
-  "success_rate": 0.0,
-  "median_final_err_cm": 59.57,
-  "mean_time_to_reach_s": NaN,
-  "torque_jerk": 16.163320000000002,
-  "wheel_jerk": 0.431496,
-  "think_us_per_step": 398.686,
+  "success_rate": 0.66,
+  "median_final_err_cm": 1.0,
+  "mean_time_to_reach_s": 13.47578787878788,
+  "torque_jerk": 0.20924199999999998,
+  "wheel_jerk": 0.010874000000000002,
+  "think_us_per_step": 456.0160000000001,
   "outcomes": {
-   "crashed_ground": 20,
-   "timeout": 29,
-   "crashed_base": 1
+   "reached": 33,
+   "timeout": 17
+  }
+ },
+ "3": {
+  "scenes": 50,
+  "success_rate": 0.7,
+  "median_final_err_cm": 1.0,
+  "mean_time_to_reach_s": 11.818885714285715,
+  "torque_jerk": 0.293672,
+  "wheel_jerk": 0.015035999999999999,
+  "think_us_per_step": 275.318,
+  "outcomes": {
+   "reached": 35,
+   "timeout": 15
   }
  }
 }
