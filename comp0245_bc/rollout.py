@@ -197,6 +197,7 @@ class MLPPolicy:
         self.wheel_vel = bool(meta.get("wheel_vel_features", False))
         self.action = meta.get("action", "torque")
         self.smooth = meta.get("smooth")    # model M: filter window in seconds (None for older models)
+        self.smooth_qd = meta.get("smooth_qd", True)   # False = model M2: arm speeds stay raw (M has no entry)
         self.arm_params = ArmControllerParams(reach_limit=ARM_REACH_LIMIT)   # same Kp, Kd as the expert
 
     def reset(self, world, target):
@@ -242,6 +243,7 @@ class MLPPolicy:
         """One control step: measurements + target -> (wheel speeds, arm torques)."""
         # 0. Model M: the arm speeds and history use readings smoothed every 10 ms, exactly as in
         #    training (features.smooth_run); every other input uses the raw readings.
+        #    Model M2 smooths only the history: the arm speeds stay raw (they are the arm's brake).
         bp, yaw, q, qd = obs["base_pos"], obs["base_bearing"], obs["q_mes"], obs["qd_mes"]
         if self.smoother is not None:
             if self.k % self.sample_every == 0:
@@ -249,7 +251,8 @@ class MLPPolicy:
             bp, yaw, q, qd = self.sm_now
 
         # 1. Build the input row, group by group, in the same order as train.py
-        X = make_features(obs["base_pos"], obs["base_bearing"], obs["q_mes"], qd, obs["ee_pos"], self.target)
+        X = make_features(obs["base_pos"], obs["base_bearing"], obs["q_mes"],
+                          qd if self.smooth_qd else obs["qd_mes"], obs["ee_pos"], self.target)
         if self.history:
             X = np.column_stack([X, self._history(bp, yaw, q)])
         if self.goal:

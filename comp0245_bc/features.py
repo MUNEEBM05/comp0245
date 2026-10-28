@@ -199,17 +199,20 @@ def run_integral(arrays, log_dt=0.01):
 WHEEL_VEL_NAMES = ["wheel_vel_fr", "wheel_vel_fl", "wheel_vel_bl", "wheel_vel_br"]
 
 
-def run_xy_full(arrays, history=False, goal=False, integral=False, action="torque", wheel_vel=False, smooth=None):
+def run_xy_full(arrays, history=False, goal=False, integral=False, action="torque", wheel_vel=False, smooth=None,
+                smooth_qd=True):
     """Inputs and outputs with all optional groups.
 
     action="torque":    outputs = 7 arm torques + 4 wheel speeds (the brief's outputs)
     action="reference": outputs = 7 arm reference offsets (q_ref - q) + 7 reference speeds + 4 wheel speeds;
                         a fixed PD law (the template's Kp=100, Kd=30, plus gravity) turns them into torques.
     smooth=tau:         arm speeds and history built from readings smoothed over ~tau seconds (model M)
+    smooth_qd=False:    with smooth, keep the arm speeds raw and smooth only the history (model M2)
     """
     if smooth:   # model M: arm speeds and history from smoothed readings, positions stay raw
         sm = smooth_run(arrays, smooth)
-        X, Y = run_to_xy(dict(arrays, qd_mes=sm["qd_mes"]))
+        # M2 keeps the arm speeds raw: they are the arm's brake, and a lagged brake makes it swing
+        X, Y = run_to_xy(dict(arrays, qd_mes=sm["qd_mes"]) if smooth_qd else arrays)
         parts = [X]
         if history:
             parts.append(run_history(sm))
@@ -246,6 +249,8 @@ def feature_names_full(history=False, goal=False, integral=False, wheel_vel=Fals
 # base position, heading, arm angles and arm speeds are exponentially averaged over the last
 # ~tau seconds, and the speeds and history are built from those. Positions stay raw (noise is
 # small next to them, and smoothing would only add lag).
+# M crashed even on clean scenes: the network brakes the arm with the speed inputs, and a 50 ms
+# old speed brakes at the wrong moment. M2 (smooth_qd=False) smooths only the history.
 # ------------------------------------------------------------------------------------------
 SMOOTH_TAU_S = 0.05
 
