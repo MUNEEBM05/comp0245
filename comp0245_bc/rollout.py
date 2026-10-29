@@ -48,14 +48,16 @@ MAX_WHEEL = (0.25 + 1.0 * 0.66 / 2) / 0.11   # rad/s, fastest wheel speed the ex
 class World:
     """Everything a policy might need: the simulator, the robot model, limits and time step."""
 
-    def __init__(self, start_pose, target, use_gui=False):
+    def __init__(self, start_pose, target, use_gui=False, floor_friction=1.0, base_mass_scale=1.0):
         cur_dir = HERE
         with quiet_native():
             self.sim = pb.SimInterface(CONF_FILE_NAME, conf_file_path_ext=cur_dir, use_gui=use_gui)
         sim = self.sim
         self.client = c = sim.pybullet_client
-        sim.SetFloorFriction(1.0)
+        sim.SetFloorFriction(float(floor_friction))     # tier 5 changes it; the template uses 1.0
         self.rid = rid = sim.bot[0].bot_pybullet
+        if base_mass_scale != 1.0:                      # tier 5: heavier / lighter base
+            c.changeDynamics(rid, -1, mass=c.getDynamicsInfo(rid, -1)[0] * float(base_mass_scale))
         names = [c.getJointInfo(rid, j)[1].decode() for j in range(c.getNumJoints(rid))]
         for j, n in enumerate(names):
             if "wheel" in n:
@@ -195,6 +197,8 @@ class MLPPolicy:
         self.goal = bool(meta.get("goal_features", False))
         self.integral = bool(meta.get("integral_features", False))
         self.wheel_vel = bool(meta.get("wheel_vel_features", False))
+        self.ik = bool(meta.get("ik_features", False))
+        self.relative = bool(meta.get("relative", False))   # absolute map positions dropped from the inputs
         self.action = meta.get("action", "torque")
         self.arm_params = ArmControllerParams(reach_limit=ARM_REACH_LIMIT)   # same Kp, Kd as the expert
 
@@ -208,6 +212,9 @@ class MLPPolicy:
         self.buf = deque(maxlen=int(round(max(HISTORY_LAGS_S) / 0.01)) + 1)
         self.k = 0
         self.averager, self.avg_now = ErrorAverager(0.01), None
+        if getattr(self, "ik", False):
+            from ik_features import IKAverager
+            self.ik_avg, self.ik_now = IKAverager(0.01), None
 
     def _history(self, obs):
         """History inputs: how the base and arm moved over the last 0.1 s and 0.5 s."""
@@ -251,6 +258,18 @@ class MLPPolicy:
             X = np.column_stack([X, self.avg_now[None, :]])
         if self.wheel_vel:
             X = np.column_stack([X, obs["qd_mes"][None, 0:4]])
+        if self.ik:
+            # fresh IK direction every step; its running averages advance every 10 ms like the recordings
+            from ik_features import ik_rates
+            w = self.w
+            qd = ik_rates(w.dyn_model, w.ee_frame_id, w.shoulder_frame_id, obs["q_pin"], obs["ee_pos"],
+                          self.target, self.arm_params)
+            if self.k % self.sample_every == 0:
+                self.ik_now = self.ik_avg.update(qd)
+            X = np.column_stack([X, np.concatenate([qd, self.ik_now[7:]])[None, :].astype(np.float32)])
+        if self.relative:
+            from features import ABSOLUTE_IDX
+            X = np.delete(X, ABSOLUTE_IDX, axis=1)
         self.k += 1
 
         # 2. Ask the model
@@ -284,18 +303,23 @@ def make_policy(spec):
 # ------------------------------------------------------------------------------------------
 # One drive
 # ------------------------------------------------------------------------------------------
-def rollout(policy, scene, max_time=40.0, use_gui=False, record_hz=100, seed=None):
+def rollout(policy, scene, max_time=40.0, use_gui=False, record_hz=100, seed=None, hold_s=0.0):
     """Drive one scene with the given policy. Returns (metrics dict, trajectory dict at record_hz).
 
     A scene is a dict with "target", "start_pose" and "seed" (and optionally "disturbance" for
     tier 4: sensor noise, command delay and a sideways shove). The drive ends when the hand is
     within 1 cm of the target (success), on an arm collision, if the base tips over, if the model
     outputs NaN, or after max_time seconds.
+
+    hold_s > 0: stricter success. The hand must STAY within 1 cm for hold_s seconds in a row (a real robot
+    has to hold the pose to do anything there). Leaving the 1 cm zone restarts the clock. A drive that
+    arrived but never held long enough ends as "reached_not_held".
     """
     target = np.asarray(scene["target"], float)
     dist = scene.get("disturbance") or {}
     rng = np.random.default_rng(scene["seed"] if seed is None else seed)
-    world = World(scene["start_pose"], target, use_gui=use_gui)
+    world = World(scene["start_pose"], target, use_gui=use_gui,
+                  floor_friction=dist.get("floor_friction", 1.0), base_mass_scale=dist.get("base_mass_scale", 1.0))
     sim, c = world.sim, world.client
     try:
         policy.reset(world, target)
@@ -307,6 +331,7 @@ def rollout(policy, scene, max_time=40.0, use_gui=False, record_hz=100, seed=Non
 
         traj = {k: [] for k in ["t", "base_pos", "yaw", "ee_pos", "err", "wheel_cmds", "torque_arm"]}
         t, step, outcome, think = 0.0, 0, None, 0.0
+        hold_start, first_reach = None, None
         min_err, path_len, prev_xy, prev_cmd, jerk = np.inf, 0.0, None, None, []
         max_steps = int(round(max_time / dt))
 
@@ -370,10 +395,19 @@ def rollout(policy, scene, max_time=40.0, use_gui=False, record_hz=100, seed=Non
                     break
 
             if err < REACH_TOLERANCE:
-                outcome = "reached"
-                break
+                if first_reach is None:
+                    first_reach = t
+                if hold_s <= 0:
+                    outcome = "reached"
+                    break
+                hold_start = t if hold_start is None else hold_start
+                if t - hold_start >= hold_s:
+                    outcome = "reached"            # arrived AND held still for hold_s
+                    break
+            else:
+                hold_start = None
             if step >= max_steps:
-                outcome = "timeout"
+                outcome = "reached_not_held" if first_reach is not None else "timeout"
                 break
 
             # Shove the base sideways for 0.1 s (tier 4). The force is applied at the base link's
@@ -404,7 +438,8 @@ def rollout(policy, scene, max_time=40.0, use_gui=False, record_hz=100, seed=Non
     metrics = {
         "policy": policy.name, "tier": scene.get("tier"), "index": scene.get("index"), "seed": scene["seed"],
         "outcome": outcome, "success": outcome == "reached",
-        "time_s": round(t, 3), "final_err_cm": round(err * 100, 2), "min_err_cm": round(min_err * 100, 2),
+        "time_s": round(t, 3), "hold_s": hold_s,
+        "first_reach_s": None if first_reach is None else round(first_reach, 3), "final_err_cm": round(err * 100, 2), "min_err_cm": round(min_err * 100, 2),
         "base_path_m": round(path_len, 3),
         "goal_dist_end_m": round(float(np.linalg.norm(tr_bp[-1, :2] - goal)), 3),
         "face_err_end_deg": round(face_err, 1),
@@ -452,7 +487,250 @@ _make_policy_basic = make_policy
 
 def make_policy(spec):  # noqa: F811  (extends the version above)
     """'expert', a path to a trained .npz, or 'path.npz:mlp_arm' / 'path.npz:mlp_wheels'."""
+    if spec == "markov_expert":                     # memory-free expert used to label DAgger data
+        from markov_expert import MarkovExpertPolicy
+        return MarkovExpertPolicy()
     if spec.endswith(":mlp_arm") or spec.endswith(":mlp_wheels"):
         path, mode = spec.rsplit(":", 1)
         return HybridPolicy(path, mode)
     return _make_policy_basic(spec)
+
+
+class GRUPolicy(MLPPolicy):
+    """A trained GRU (train_gru.py) driving the robot, run with NumPy.
+
+    Inputs are built exactly as for the MLPs (MLPPolicy.act). The memory h is advanced once per 10 ms,
+    like the 100 Hz training data: row t uses h_{t-1}. In between, every 1 ms decision still uses the
+    freshest measurements with that same h_{t-1}, so the arm's damping never works on stale readings.
+    """
+
+    def __init__(self, path):
+        z = np.load(path)
+        self.name = os.path.splitext(os.path.basename(path))[0]
+        self.forest, self.nets = None, []
+        for k in ("W_ih", "W_hh", "b_ih", "b_hh", "H_W0", "H_b0", "H_W1", "H_b1"):
+            setattr(self, k, z[k])
+        self.x_mean, self.x_std, self.y_mean, self.y_std = z["x_mean"], z["x_std"], z["y_mean"], z["y_std"]
+        self.x_lo, self.x_hi, self.clip_inputs = z["x_lo"], z["x_hi"], True
+        self._read_meta(json.loads(str(z["meta"])))
+        self.n_h = self.W_hh.shape[1]
+
+    def reset(self, world, target):
+        super().reset(world, target)
+        self.h_base = np.zeros(self.n_h, np.float32)     # h_{t-1}
+        self.h_next = np.zeros(self.n_h, np.float32)     # h_t, becomes h_base at the next 10 ms row
+
+    def _gru(self, x, h):
+        gi = x @ self.W_ih.T + self.b_ih
+        gh = h @ self.W_hh.T + self.b_hh
+        n = self.n_h
+        sig = lambda v: 1.0 / (1.0 + np.exp(-np.clip(v, -30.0, 30.0)))   # clipped: no overflow warnings
+        r = sig(gi[:n] + gh[:n])
+        zg = sig(gi[n:2 * n] + gh[n:2 * n])
+        cand = np.tanh(gi[2 * n:] + r * gh[2 * n:])
+        return (1.0 - zg) * cand + zg * h
+
+    def predict(self, X):
+        X = np.clip(X, self.x_lo, self.x_hi)
+        x = ((X - self.x_mean) / self.x_std)[0].astype(np.float32)
+        new_row = (self.k - 1) % self.sample_every == 0      # act() has already counted this step
+        if new_row:
+            self.h_base = self.h_next
+        h = self._gru(x, self.h_base)
+        if new_row:
+            self.h_next = h
+        y = np.maximum(h @ self.H_W0 + self.H_b0, 0.0) @ self.H_W1 + self.H_b1
+        return (y * self.y_std + self.y_mean)[None, :]
+
+
+class TCNPolicy(MLPPolicy):
+    """A trained temporal convolution model (train_conv.py) driving the robot, run with NumPy.
+
+    Each causal layer only needs its newest output: the outputs for past 10 ms rows are cached (they never
+    change), so a decision costs about one small matrix product per layer. Like the GRU, the cache moves on
+    once per 10 ms row, while every 1 ms decision uses the freshest measurements as the newest row.
+    The model predicts the next `chunk` commands; the chunks predicted over the last rows that cover "now"
+    are blended with weights exp(-k * age) (temporal ensembling), set by `ensemble_k` (None = no blending).
+    """
+
+    def __init__(self, path, ensemble_k="model"):
+        z = np.load(path)
+        self.name = os.path.splitext(os.path.basename(path))[0]
+        self.forest, self.nets = None, []
+        meta = json.loads(str(z["meta"]))
+        self.kernel, self.dil, self.chunk = meta["kernel"], meta["dilations"], meta["chunk"]
+        self.Ws = [z[f"C{i}_W"] for i in range(len(self.dil))]
+        self.bs = [z[f"C{i}_b"] for i in range(len(self.dil))]
+        self.H = [z[k] for k in ("H_W0", "H_b0", "H_W1", "H_b1", "H_W2", "H_b2") if k in z.files]
+        self.skip = bool(meta.get("skip", False))
+        self.x_mean, self.x_std, self.y_mean, self.y_std = z["x_mean"], z["x_std"], z["y_mean"], z["y_std"]
+        self.x_lo, self.x_hi, self.clip_inputs = z["x_lo"], z["x_hi"], True
+        self.k_ens = meta.get("ensemble_k") if ensemble_k == "model" else ensemble_k
+        self._read_meta(meta)
+
+    def reset(self, world, target):
+        super().reset(world, target)
+        self.bufs = None             # per layer: its INPUTS at past rows (newest last)
+        self.chunks = deque(maxlen=self.chunk)
+
+    def _layer(self, i, cur_in):
+        """Newest output of layer i, from its newest input and the cached past inputs."""
+        W, b, d, buf = self.Ws[i], self.bs[i], self.dil[i], self.bufs[i]
+        out = b.copy()
+        for j in range(self.kernel):
+            back = (self.kernel - 1 - j) * d            # kernel tap j looks this many rows back
+            v = cur_in if back == 0 else buf[-back]
+            out += W[:, :, j] @ v
+        return np.maximum(out, 0.0)
+
+    def predict(self, X):
+        X = np.clip(X, self.x_lo, self.x_hi)
+        x = ((X - self.x_mean) / self.x_std)[0].astype(np.float32)
+        new_row = (self.k - 1) % self.sample_every == 0
+        if self.bufs is None:       # start of a drive: the past is the first reading repeated (as in training)
+            self.bufs, v = [], x
+            for i, d in enumerate(self.dil):
+                self.bufs.append(deque([v] * ((self.kernel - 1) * d), maxlen=(self.kernel - 1) * d))
+                v = self._layer(i, v)
+        acts, v = [], x
+        for i in range(len(self.dil)):
+            acts.append(v)
+            v = self._layer(i, v)
+        h = np.concatenate([v, x]) if self.skip else v      # skip connection: the current row itself
+        for j in range(0, len(self.H), 2):
+            h = h @ self.H[j] + self.H[j + 1]
+            if j < len(self.H) - 2:
+                h = np.maximum(h, 0.0)
+        pred = h.reshape(self.chunk, -1)
+        # temporal ensembling: blend "now" from this prediction and from chunks made 1, 2, ... rows ago
+        if self.k_ens is None or not self.chunks:
+            y = pred[0]
+        else:
+            num, den = pred[0].copy(), 1.0
+            for age, c in enumerate(reversed(self.chunks), start=1):
+                if age < self.chunk:
+                    w = float(np.exp(-self.k_ens * age))
+                    num += w * c[age]
+                    den += w
+            y = num / den
+        if new_row:                  # this row is now part of the past: cache it and its chunk
+            for i in range(len(self.dil)):
+                self.bufs[i].append(acts[i])
+            self.chunks.append(pred)
+        return (y * self.y_std + self.y_mean)[None, :]
+
+
+class AttnPolicy(TCNPolicy):
+    """A trained attention model (train_conv.py --arch attn): a small causal transformer over the last 61
+    rows (0.61 s). Each moment attends to itself and older moments, so the results for the 60 past rows are
+    computed once per 10 ms row and cached; every 1 ms decision only runs the newest moment through the
+    blocks (attending to the cached keys and values). Chunk blending as in TCNPolicy."""
+
+    def __init__(self, path, ensemble_k="model"):
+        z = np.load(path)
+        self.name = os.path.splitext(os.path.basename(path))[0]
+        self.forest, self.nets = None, []
+        meta = json.loads(str(z["meta"]))
+        self.P = {k[3:].replace("__", "."): z[k] for k in z.files if k.startswith("A__")}
+        self.n_blocks, self.heads, self.chunk = meta["blocks"], meta["heads"], meta["chunk"]
+        self.T = self.P["pos"].shape[0]
+        self.H = [z[k] for k in ("H_W0", "H_b0", "H_W1", "H_b1", "H_W2", "H_b2") if k in z.files]
+        self.skip = bool(meta.get("skip", False))
+        self.x_mean, self.x_std, self.y_mean, self.y_std = z["x_mean"], z["x_std"], z["y_mean"], z["y_std"]
+        self.x_lo, self.x_hi, self.clip_inputs = z["x_lo"], z["x_hi"], True
+        self.k_ens = meta.get("ensemble_k") if ensemble_k == "model" else ensemble_k
+        self._read_meta(meta)
+
+    def reset(self, world, target):
+        MLPPolicy.reset(self, world, target)
+        self.hist, self.cache, self.row_x = None, None, None
+        self.chunks = deque(maxlen=self.chunk)
+
+    def _lin(self, name, x):
+        return x @ self.P[name + ".weight"].T + self.P[name + ".bias"]
+
+    def _ln(self, name, x):
+        m = x.mean(-1, keepdims=True)
+        v = ((x - m) ** 2).mean(-1, keepdims=True)
+        return (x - m) / np.sqrt(v + 1e-5) * self.P[name + ".weight"] + self.P[name + ".bias"]
+
+    def _heads(self, x):            # (T, D) -> (heads, T, D/heads)
+        return x.reshape(x.shape[0], self.heads, -1).transpose(1, 0, 2)
+
+    def _past(self):
+        """Run the 60 cached past rows through every block (causal), keeping each block's keys/values."""
+        h = self._lin("emb", np.array(self.hist)) + self.P["pos"][:-1]
+        n = h.shape[0]
+        mask = np.triu(np.full((n, n), -1e9), 1)
+        self.cache = []
+        for i in range(self.n_blocks):
+            b = f"blocks.{i}"
+            zz = self._ln(b + ".ln1", h)
+            q, k, v = (self._heads(self._lin(f"{b}.{w}", zz)) for w in "qkv")
+            att = q @ k.transpose(0, 2, 1) / np.sqrt(q.shape[-1]) + mask
+            att = np.exp(att - att.max(-1, keepdims=True))
+            att /= att.sum(-1, keepdims=True)
+            out = (att @ v).transpose(1, 0, 2).reshape(n, -1)
+            self.cache.append((k, v))
+            h = h + self._lin(b + ".o", out)
+            h = h + self._lin(b + ".ff2", np.maximum(self._lin(b + ".ff1", self._ln(b + ".ln2", h)), 0.0))
+
+    def predict(self, X):
+        X = np.clip(X, self.x_lo, self.x_hi)
+        x = ((X - self.x_mean) / self.x_std)[0].astype(np.float32)
+        new_row = (self.k - 1) % self.sample_every == 0
+        if self.hist is None:                       # start: the past is the first reading repeated
+            self.hist = deque([x] * (self.T - 1), maxlen=self.T - 1)
+            self._past()
+        elif new_row:                               # last row's reading joins the past
+            self.hist.append(self.row_x)
+            self._past()
+        if new_row:
+            self.row_x = x
+        h = self._lin("emb", x[None]) + self.P["pos"][-1]
+        for i, (kc, vc) in enumerate(self.cache):
+            b = f"blocks.{i}"
+            zz = self._ln(b + ".ln1", h)
+            q, k, v = (self._heads(self._lin(f"{b}.{w}", zz)) for w in "qkv")
+            K, V = np.concatenate([kc, k], 1), np.concatenate([vc, v], 1)
+            att = q @ K.transpose(0, 2, 1) / np.sqrt(q.shape[-1])
+            att = np.exp(att - att.max(-1, keepdims=True))
+            att /= att.sum(-1, keepdims=True)
+            h = h + self._lin(b + ".o", (att @ V).transpose(1, 0, 2).reshape(1, -1))
+            h = h + self._lin(b + ".ff2", np.maximum(self._lin(b + ".ff1", self._ln(b + ".ln2", h)), 0.0))
+        zz = self._ln("lnf", h)[0]
+        hh = np.concatenate([zz, x]) if self.skip else zz
+        for j in range(0, len(self.H), 2):
+            hh = hh @ self.H[j] + self.H[j + 1]
+            if j < len(self.H) - 2:
+                hh = np.maximum(hh, 0.0)
+        pred = hh.reshape(self.chunk, -1)
+        if self.k_ens is None or not self.chunks:
+            y = pred[0]
+        else:
+            num, den = pred[0].copy(), 1.0
+            for age, c in enumerate(reversed(self.chunks), start=1):
+                if age < self.chunk:
+                    w = float(np.exp(-self.k_ens * age))
+                    num += w * c[age]
+                    den += w
+            y = num / den
+        if new_row:
+            self.chunks.append(pred)
+        return (y * self.y_std + self.y_mean)[None, :]
+
+
+_make_policy_mlp_or_hybrid = make_policy
+
+
+def make_policy(spec):  # noqa: F811  (extends the versions above with GRU model files)
+    if spec.endswith(".npz") and os.path.exists(spec):
+        with np.load(spec) as z:
+            kind = json.loads(str(z["meta"])).get("model") if "meta" in z.files else None
+        if kind == "gru":
+            return GRUPolicy(spec)
+        if kind == "tcn":
+            return TCNPolicy(spec)
+        if kind == "attn":
+            return AttnPolicy(spec)
+    return _make_policy_mlp_or_hybrid(spec)

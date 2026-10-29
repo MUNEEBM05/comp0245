@@ -85,7 +85,8 @@ def _classify_stop(message):
 
 def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz=100,
                 cmd_noise_std=0.0, noise_hold_s=0.3, nudge_when="always", kick_prob=0.0, kick_std=15.0,
-                use_gui=False, time_limit_s=None):
+                use_gui=False, time_limit_s=None, obs_noise=0.0, delay_steps=0, floor_friction=1.0,
+                base_mass_scale=1.0, hold_s=0.0, hold_unreachable=False):
     """Run the expert once and (optionally) save the recording.
 
     Args:
@@ -109,12 +110,25 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         use_gui:       open the PyBullet window (slow; for watching one run).
         time_limit_s:  wall-clock safety limit; the run is stopped and marked "timeout".
 
+        Domain randomisation (Stage B). The expert still controls from the TRUE state, so its
+        commands stay perfect labels; what changes is the world, and what gets RECORDED as inputs:
+        obs_noise:     std of sensor noise (same recipe as tier 4 in rollout.py). The recorded inputs
+                       (base_pos, base_bearing, q_mes, qd_mes, ee_pos, tau_gravity) are the noisy
+                       readings the model will see; the true ones are kept as *_true.
+        delay_steps:   commands reach the motors this many 1-ms steps late.
+        floor_friction: floor friction coefficient (template: 1.0).
+        base_mass_scale: the base's mass is multiplied by this (heavier / lighter robot).
+        hold_s:        keep running (and recording) the expert this long AFTER it reaches the target, so the
+                       data shows what to do once there: hold still. The template stops the instant it
+                       arrives, so without this the model never sees a single "arrived, stay put" example.
+
     Returns:
         dict with the summary ("meta") and the recorded arrays.
     """
     target = np.asarray(target, dtype=float)
     start_pose = np.asarray(start_pose, dtype=float)
     rng = np.random.default_rng(seed)
+    noise_rng = np.random.default_rng([seed, 1])   # separate stream: adding noise must not change the nudges
     wall_start = time.time()
 
     # --------------------------------------------------------------------------------------
@@ -125,8 +139,11 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         sim = pb.SimInterface(CONF_FILE_NAME, conf_file_path_ext=cur_dir, use_gui=use_gui)
     client = sim.pybullet_client
     try:
-        sim.SetFloorFriction(1.0)
+        sim.SetFloorFriction(float(floor_friction))
         rid = sim.bot[0].bot_pybullet
+        if base_mass_scale != 1.0:
+            base_mass = client.getDynamicsInfo(rid, -1)[0]
+            client.changeDynamics(rid, -1, mass=base_mass * float(base_mass_scale))
         joint_names = [client.getJointInfo(rid, j)[1].decode() for j in range(client.getNumJoints(rid))]
         wheel_joint_ids = [j for j, n in enumerate(joint_names) if "wheel" in n]
         for j in wheel_joint_ids:
@@ -209,8 +226,11 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
             "t", "base_pos", "base_quat", "base_bearing", "q_mes", "qd_mes", "ee_pos", "target",
             "phase", "nav_done", "q_des_arm", "qd_des_arm", "tau_gravity",
             "torque_arm", "wheel_cmds", "torque_arm_sent", "wheel_cmds_sent",
-            "contact_ground", "contact_self",
+            "contact_ground", "contact_self", "base_pos_true", "base_bearing_true", "ee_pos_true", "holding",
         ]}
+        hold_until, hold_max_err, reach_time_first = None, 0.0, None
+        from collections import deque
+        delay_line = deque([np.zeros(11)] * int(delay_steps))
 
         hold_steps = max(1, int(round(noise_hold_s / dt)))
         nudge = np.zeros(11)
@@ -271,22 +291,47 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
                     sent[4:] = np.clip(sent[4:] + kick, -arm_params.max_torque, arm_params.max_torque)
                     kick_left -= 1
 
+            # --- Optional command delay: the motors get the command from delay_steps ms ago -----
+            if delay_steps > 0:
+                delay_line.append(sent)
+                sent = delay_line.popleft()
+
             # --- Record BEFORE the stop check, so the last step is kept (the template logs after
             #     it and so drops the final step). Every log_every-th step = 100 Hz by default.
             if step % log_every == 0:
-                tau_g = pin.computeGeneralizedGravity(dyn_model.pin_model, dyn_model.pin_data, q_pin)[6:13]
+                # Sensor noise (Stage B): record what a noisy sensor would have shown. Same recipe as
+                # rollout.py's tier 4 (positions / angles: std obs_noise; speeds: 10x that). Gravity is
+                # computed at the NOISY pose, because that is what the model adds back when it drives.
+                if obs_noise > 0:
+                    bp_seen = base_pos.copy()
+                    bp_seen[:2] += noise_rng.normal(0, obs_noise, 2)
+                    yaw_seen = base_bearing + noise_rng.normal(0, obs_noise)
+                    bq_seen = np.array(client.getQuaternionFromEuler([0.0, 0.0, yaw_seen]))
+                    q_seen = q_mes + noise_rng.normal(0, obs_noise, q_mes.shape)
+                    qd_seen = qd_mes + noise_rng.normal(0, 10 * obs_noise, qd_mes.shape)
+                    q_pin_seen = dyn_model.ReoderJoints2PinVec(np.concatenate((bp_seen, bq_seen, q_seen)), "pos")
+                    pin.forwardKinematics(dyn_model.pin_model, dyn_model.pin_data, q_pin_seen)
+                    pin.updateFramePlacements(dyn_model.pin_model, dyn_model.pin_data)
+                    ee_seen = dyn_model.pin_data.oMf[ee_frame_id].translation.copy()
+                else:
+                    bp_seen, bq_seen, yaw_seen, q_seen, qd_seen, ee_seen, q_pin_seen = (
+                        base_pos, base_ori, base_bearing, q_mes, qd_mes, ee_pos, q_pin)
+                tau_g = pin.computeGeneralizedGravity(dyn_model.pin_model, dyn_model.pin_data, q_pin_seen)[6:13]
                 ground_hit = any(c[3] in checked_links for c in client.getContactPoints(bodyA=rid, bodyB=ground))
                 self_hit = any(
                     len(client.getClosestPoints(rid, rid, 0.0, linkIndexA=a, linkIndexB=b)) > 0
                     for a in checked_links for b in base_links
                 )
                 log["t"].append(current_time)
-                log["base_pos"].append(base_pos)
-                log["base_quat"].append(base_ori)
-                log["base_bearing"].append(base_bearing)
-                log["q_mes"].append(q_mes)
-                log["qd_mes"].append(qd_mes)
-                log["ee_pos"].append(ee_pos)
+                log["base_pos"].append(bp_seen)
+                log["base_quat"].append(bq_seen)
+                log["base_bearing"].append(yaw_seen)
+                log["q_mes"].append(q_seen)
+                log["qd_mes"].append(qd_seen)
+                log["ee_pos"].append(ee_seen)
+                log["base_pos_true"].append(base_pos)
+                log["base_bearing_true"].append(base_bearing)
+                log["ee_pos_true"].append(ee_pos)
                 log["target"].append(target)
                 log["phase"].append(PHASE_CODES[phase_before])
                 log["nav_done"].append(nav_done)
@@ -299,6 +344,7 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
                 log["wheel_cmds_sent"].append(sent[:4])
                 log["contact_ground"].append(ground_hit)
                 log["contact_self"].append(self_hit)
+                log["holding"].append(hold_until is not None)
                 if ground_hit or self_hit:
                     outcome = "crashed"
                     stop_message = "Arm collision with " + ("ground" if ground_hit else "base")
@@ -309,10 +355,21 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
             sim.Step(cmd, "torque")
 
             # --- Stop conditions (template) --------------------------------------------------
-            stop_message = check_stop(stop_criteria, current_time, dt, ee_dist_error, nav_done)
-            if stop_message:
-                outcome = _classify_stop(stop_message)
-                break
+            if hold_until is not None:                  # after arrival: keep holding, then stop
+                hold_max_err = max(hold_max_err, ee_dist_error)
+                if current_time >= hold_until:
+                    break
+            else:
+                stop_message = check_stop(stop_criteria, current_time, dt, ee_dist_error, nav_done)
+                if stop_message:
+                    outcome = _classify_stop(stop_message)
+                    arrived = outcome == "reached" or (outcome == "unreachable" and ee_dist_error < REACH_TOLERANCE)
+                    graceful = hold_unreachable and outcome == "unreachable"   # stuck, stopped calmly
+                    if hold_s > 0 and (arrived or graceful):
+                        reach_time_first = current_time
+                        hold_until = current_time + hold_s
+                    else:
+                        break
             if time_limit_s and time.time() - wall_start > time_limit_s:
                 outcome, stop_message = "timeout", f"Wall-clock limit {time_limit_s}s"
                 break
@@ -354,7 +411,7 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         "template_outcome": template_outcome,
         "final_ee_error": ee_dist_error,
         "min_ee_error": float(min_ee_error),
-        "reach_time": float(current_time) if outcome == "reached" else None,
+        "reach_time": (reach_time_first if reach_time_first is not None else float(current_time)) if outcome == "reached" else None,
         "nav_done_time": nav_done_time,
         "nav_timed_out": bool(nav_done_time is not None and nav_done_time >= BASE_NAV_TIMEOUT - dt),
         "duration": float(current_time),
@@ -365,6 +422,11 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         "cmd_noise_std": float(cmd_noise_std),
         "noise_hold_s": float(noise_hold_s) if cmd_noise_std > 0 else None,
         "nudge_when": nudge_when if cmd_noise_std > 0 else None,
+        "hold_s": float(hold_s), "hold_max_err": float(hold_max_err) if hold_until is not None else None,
+        "held": bool(hold_until is not None and hold_max_err < REACH_TOLERANCE),
+        "first_reach_time": reach_time_first,
+        "obs_noise": float(obs_noise), "delay_steps": int(delay_steps),
+        "floor_friction": float(floor_friction), "base_mass_scale": float(base_mass_scale),
         "kick_prob": float(kick_prob), "kick_std": float(kick_std), "n_kicks": int(kick_count),
         "max_steps": int(max_steps),
         "wall_time_s": float(time.time() - wall_start),

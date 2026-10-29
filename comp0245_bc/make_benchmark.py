@@ -20,7 +20,20 @@ def main():
     ap.add_argument("--per-tier", type=int, default=50)
     ap.add_argument("--out", default=os.path.join(HERE, "benchmark", "scenes.json"))
     ap.add_argument("--force", action="store_true", help="overwrite an existing frozen file")
+    ap.add_argument("--add-tier", type=int, help="append a NEW tier to the frozen file (existing scenes untouched)")
     a = ap.parse_args()
+
+    if a.add_tier is not None:
+        with open(a.out) as fh:
+            bench = json.load(fh)
+        if any(s["tier"] == a.add_tier for s in bench["scenes"]):
+            print(f"Tier {a.add_tier} is already in {a.out}; nothing changed.")
+            return
+        bench["scenes"] += [benchmark_scene(a.add_tier, i) for i in range(bench["per_tier"])]
+        with open(a.out, "w") as fh:
+            json.dump(bench, fh, indent=1)
+        print(f"Added {bench['per_tier']} tier-{a.add_tier} scenes to {a.out} (tiers 1-4 unchanged)")
+        return
 
     if os.path.exists(a.out) and not a.force:
         print(f"{a.out} already exists and is frozen. Not overwriting (use --force only if you really mean it).")

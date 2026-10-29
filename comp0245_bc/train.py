@@ -33,7 +33,7 @@ import time
 import numpy as np
 
 from check_runs import load_run, _outcome
-from features import feature_names_full, output_names, run_xy_full
+from features import ABSOLUTE_IDX, ABSOLUTE_NAMES, feature_names_full, output_names, run_xy_full
 from quiet import run_main
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -54,16 +54,34 @@ def run_data(arrays, a):
     the loss care more about the final approach, which is a small fraction of every run.
     """
     X, Y = run_xy_full(arrays, history=a.history == "deltas", goal=a.goal, integral=a.integral, action=a.action,
-                       wheel_vel=a.wheel_vel)
+                       wheel_vel=a.wheel_vel, ik=getattr(a, "ik", False))
+    if getattr(a, "relative", False):
+        X = np.delete(X, ABSOLUTE_IDX, axis=1)
     if a.action == "torque" and a.torque == "minus_gravity":
         Y = Y.copy()
         Y[:, :7] -= arrays["tau_gravity"]
-    return X, Y, arrays["nav_done"].astype(np.float32)
+    R = arrays["nav_done"].astype(np.float32)
+    hw = getattr(a, "hold_weight", 1.0)
+    if hw != 1.0 and "holding" in arrays:
+        # rows where the expert has arrived and is holding still count hold_weight times as much extra
+        R = R * (1.0 + (hw - 1.0) * arrays["holding"].astype(np.float32))
+    return X, Y, R
+
+
+def _excluded(a):
+    """Files (relative paths) listed in --exclude."""
+    if not getattr(a, "exclude", None):
+        return set()
+    with open(a.exclude) as fh:
+        return {os.path.normpath(r["file"]) for r in json.load(fh)["runs"]}
 
 
 def load_split(split_path, run_dirs, part, a):
     with open(split_path) as fh:
         seeds = json.load(fh)[part]
+    if part == "train" and _excluded(a):
+        bad = _excluded(a)
+        seeds = [s for s in seeds if os.path.normpath(os.path.relpath(_find_run(s, run_dirs), HERE)) not in bad]
     parts = [run_data(load_run(_find_run(s, run_dirs))[1], a) for s in seeds]
     return tuple(np.concatenate(p) for p in zip(*parts))
 
@@ -170,6 +188,9 @@ def main():
     ap.add_argument("--integral", action="store_true",
                     help="add the hand-to-target error averaged over the last 0.5 s and 2 s (the expert's "
                          "'keep pushing while an error remains' trick, built from measurements)")
+    ap.add_argument("--ik", action="store_true",
+                    help="add the arm's IK direction (joint speeds the arm's geometry asks for) and its running "
+                         "averages: the fine-correction signal for the last centimetre (ik_features.py)")
     ap.add_argument("--wheel-vel", action="store_true",
                     help="add the measured wheel speeds as inputs (ablation: may cause the copycat shortcut)")
     ap.add_argument("--action", choices=["torque", "reference"], default="torque",
@@ -179,12 +200,24 @@ def main():
                     help="train separate networks for the arm and the wheels (variant B)")
     ap.add_argument("--reach-weight", type=float, default=1.0,
                     help="training weight of rows where the arm is reaching (variant C), e.g. 3")
+    ap.add_argument("--hold-weight", type=float, default=1.0,
+                    help="extra weight for rows where the expert has arrived and holds still (recordings made "
+                         "with collect.py --hold), e.g. 3: the hold phase is only ~10%% of the rows")
+    ap.add_argument("--keep-unreachable", action="store_true",
+                    help="also train on extra drives where the expert gave up calmly on an unreachable target "
+                         "(collect.py --wide --hold): teaches 'get as close as you can, then stay still'")
+    ap.add_argument("--relative", action="store_true",
+                    help="drop the absolute map positions (tgt_x, tgt_y, base_x, base_y): every input is then seen "
+                         "from the robot, so the model does not depend on where on the map it is")
     ap.add_argument("--runs", nargs="+", default=[os.path.join(HERE, "data", "runs")],
                     help="one or more run folders (e.g. clean + nudged recordings); the split lists their seeds")
     ap.add_argument("--split", default=os.path.join(HERE, "splits", "split.json"))
     ap.add_argument("--extra-train", nargs="*", default=[],
                     help="extra run folders (e.g. data/runs_nudged) whose successful runs are added to "
                          "TRAINING only; validation stays the same clean runs, so versions stay comparable")
+    ap.add_argument("--exclude", default=None,
+                    help="JSON list of bad expert drives (e.g. splits/bad_runs.json from data_report.py) left out "
+                         "of TRAINING; validation and test are never changed")
     ap.add_argument("--hidden", type=int, nargs="+", default=[256, 256, 256])
     ap.add_argument("--epochs", type=int, default=40)
     ap.add_argument("--batch", type=int, default=1024)
@@ -200,15 +233,24 @@ def main():
     Xtr, Ytr, Rtr = load_split(a.split, a.runs, "train", a)
     Xva, Yva, _ = load_split(a.split, a.runs, "val", a)
     n_extra = 0
+    bad = _excluded(a)
     for d in a.extra_train:
         for f in sorted(glob.glob(os.path.join(d, "run_*.npz"))):
+            if os.path.normpath(os.path.relpath(os.path.abspath(f), HERE)) in bad:
+                continue
             try:
                 meta, arrays = load_run(f)
             except Exception:
                 continue
-            if _outcome(meta) != "reached":
+            # Expert recordings: keep only successful drives. DAgger recordings: keep all of them,
+            # because the labels are the expert's even when the model's own drive failed.
+            ok = _outcome(meta) == "reached" or (a.keep_unreachable and meta["outcome"] == "unreachable")
+            if not meta.get("dagger") and not ok:
                 continue
             X, Y, R = run_data(arrays, a)
+            if "train_mask" in arrays:   # HG-DAgger: only the rows where the expert was driving
+                keep = arrays["train_mask"].astype(bool)
+                X, Y, R = X[keep], Y[keep], R[keep]
             Xtr, Ytr, Rtr = np.concatenate([Xtr, X]), np.concatenate([Ytr, Y]), np.concatenate([Rtr, R])
             n_extra += 1
     if a.extra_train:
@@ -232,7 +274,7 @@ def main():
         pred = forest.predict(xva) * y_std + y_mean
         mae = np.abs(pred - Yva).mean(0)
         val_mse = float((((pred - Yva) / y_std) ** 2).mean())
-        names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel)
+        names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel, a.ik)
         meta = {"name": a.name, "model": "forest", "torque": a.torque, "history_features": a.history,
                 "goal_features": a.goal, "integral_features": a.integral, "action": a.action,
                 "wheel_vel_features": a.wheel_vel, "separate": False, "groups": ["all"],
@@ -271,19 +313,22 @@ def main():
     mae = np.abs(pred - Yva).mean(0)               # in real units
     val_mse = float((((pred - Yva) / y_std) ** 2).mean())
 
-    names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel)
+    names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel, a.ik)
+    if a.relative:
+        names = [n for n in names if n not in ABSOLUTE_NAMES]
     OUTPUT_NAMES = output_names(a.action)
     meta = {"name": a.name, "model": a.model, "torque": a.torque, "history_features": a.history,
             "goal_features": a.goal, "integral_features": a.integral, "action": a.action,
-            "wheel_vel_features": a.wheel_vel,
-            "separate": a.separate, "reach_weight": a.reach_weight,
+            "wheel_vel_features": a.wheel_vel, "ik_features": a.ik, "relative": a.relative,
+            "keep_unreachable": a.keep_unreachable,
+            "separate": a.separate, "reach_weight": a.reach_weight, "hold_weight": a.hold_weight,
             "groups": list(groups), "feature_names": names,
             "output_names": OUTPUT_NAMES, "hidden": a.hidden if a.model == "mlp" else [],
             "val_mse_standardised": val_mse, "val_mae": dict(zip(OUTPUT_NAMES, map(float, mae))),
             "history": history, "train_rows": int(len(Xtr)), "seed": a.seed,
             "runs": [os.path.basename(os.path.normpath(r)) for r in a.runs],
             "extra_train": [os.path.basename(os.path.normpath(r)) for r in a.extra_train],
-            "extra_train_runs": n_extra}
+            "extra_train_runs": n_extra, "excluded_bad_runs": len(bad)}
     out = os.path.join(HERE, "trained", f"{a.name}.npz")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     weights = {}

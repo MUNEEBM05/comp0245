@@ -7,6 +7,10 @@ Examples (from the RoboEnv pixi shell):
     python collect.py --start 10000 --end 10150 --noise 0.05 0.1 0.15 --out data/runs_nudged   # nudged runs
     python collect.py --start 20000 --end 20100 --noise 0.05 0.1 --nudge-when reach --out data/runs_reach
     python collect.py --start 30000 --end 30120 --kick 0.02 --out data/runs_kick      # velocity-recovery runs
+    python collect.py --start 50000 --end 50200 --obs-noise 0 0.005 0.01 0.02 --delay 0 1 \
+                      --friction 0.6 1.2 --mass 0.8 1.2 --out data/runs_dr     # Stage B: domain randomisation
+    python collect.py --start 60000 --end 60200 --hold 5 --out data/runs_hold          # arrive, then hold still 5 s
+    python collect.py --start 61000 --end 61150 --hold 5 --z-bands 0.15 0.3 0.95 1.1 --out data/runs_extreme
 
 Safe to stop (Ctrl+C) and restart: runs whose file already exists are skipped.
 Simulator warnings are hidden; set ROBOENV_VERBOSE=1 to see them.
@@ -18,6 +22,8 @@ import signal
 import time
 import traceback
 from multiprocessing import Pool
+
+import numpy as np
 
 from quiet import run_main
 from samplers import training_scene
@@ -31,20 +37,43 @@ def _ignore_ctrl_c():
 
 
 def _one(args):
-    seed, out_dir, noise, time_limit, nudge_when, kick = args
+    seed, out_dir, noise, time_limit, nudge_when, kick, dr, hold, z_bands, wide = args
     path = os.path.join(out_dir, f"run_{seed:05d}.npz")
     if os.path.exists(path):
         return seed, "skipped", None, None
     try:
         from expert_episode import run_episode  # import inside the worker (Windows-safe)
-        target, start = training_scene(seed)
+        if wide:      # objects anywhere (incl. unreachable): see samplers.WIDE_*
+            from samplers import wide_training_scene
+            target, start = wide_training_scene(seed)
+        else:
+            target, start = training_scene(seed)
+        if z_bands:   # extra data at chosen heights (e.g. the extremes where the model fails most)
+            rng = np.random.default_rng([seed, 3])
+            lo, hi = z_bands[2 * int(rng.integers(len(z_bands) // 2)):][:2]
+            target = np.array([target[0], target[1], rng.uniform(lo, hi)])
         res = run_episode(target, start, seed, out_path=path, cmd_noise_std=noise,
-                          nudge_when=nudge_when, kick_prob=kick, time_limit_s=time_limit)
+                          nudge_when=nudge_when, kick_prob=kick, time_limit_s=time_limit, hold_s=hold,
+                          hold_unreachable=wide,
+                          **randomise_world(seed, dr))
         return seed, res["meta"]["outcome"], res["meta"], None
     except Exception as exc:
         with open(os.path.join(out_dir, "failures.log"), "a", encoding="utf-8") as f:
             f.write(f"--- seed {seed} ---\n{traceback.format_exc()}\n")
         return seed, "error", None, f"{type(exc).__name__}: {exc}"
+
+
+def randomise_world(seed, dr):
+    """Stage B domain randomisation: this run's sensor noise, command delay, floor friction and base
+    mass, drawn from the ranges given on the command line. Seeded by the run's seed, so every run can
+    be rebuilt exactly. With no randomisation options this returns the template's world."""
+    rng = np.random.default_rng([seed, 2])
+    return {
+        "obs_noise": float(rng.choice(dr["obs_noise"])),
+        "delay_steps": int(rng.integers(dr["delay"][0], dr["delay"][1] + 1)),
+        "floor_friction": float(rng.uniform(*dr["friction"])),
+        "base_mass_scale": float(rng.uniform(*dr["mass"])),
+    }
 
 
 def main():
@@ -60,6 +89,21 @@ def main():
                     help="reach = nudge only while the arm is reaching (fine-correction data)")
     ap.add_argument("--kick", type=float, default=0.0,
                     help="per-10ms chance of a 50 ms torque kick while reaching (velocity-recovery data), e.g. 0.02")
+    ap.add_argument("--obs-noise", type=float, nargs="+", default=[0.0],
+                    help="sensor-noise levels; each run picks one at random (0 = clean)")
+    ap.add_argument("--delay", type=int, nargs=2, default=[0, 0], metavar=("MIN", "MAX"),
+                    help="command delay in ms, drawn per run between MIN and MAX")
+    ap.add_argument("--friction", type=float, nargs=2, default=[1.0, 1.0], metavar=("LO", "HI"),
+                    help="floor friction drawn per run (template: 1.0)")
+    ap.add_argument("--mass", type=float, nargs=2, default=[1.0, 1.0], metavar=("LO", "HI"),
+                    help="base mass multiplier drawn per run")
+    ap.add_argument("--hold", type=float, default=0.0,
+                    help="keep recording this many seconds after the expert arrives (hold-still data), e.g. 5")
+    ap.add_argument("--z-bands", type=float, nargs="*", default=[],
+                    help="target heights from these bands instead, as pairs LO HI ... e.g. 0.15 0.3 0.95 1.1")
+    ap.add_argument("--wide", action="store_true",
+                    help="objects anywhere: wide target range incl. unreachable ones; with --hold the expert also "
+                         "keeps still for that long after giving up on an unreachable target")
     ap.add_argument("--time-limit", type=float, default=900, help="wall-clock seconds per run")
     a = ap.parse_args()
 
@@ -68,7 +112,9 @@ def main():
         return
 
     os.makedirs(a.out, exist_ok=True)
-    jobs = [(s, a.out, a.noise[s % len(a.noise)], a.time_limit, a.nudge_when, a.kick) for s in range(a.start, a.end)]
+    dr = {"obs_noise": a.obs_noise, "delay": a.delay, "friction": a.friction, "mass": a.mass}
+    jobs = [(s, a.out, a.noise[s % len(a.noise)], a.time_limit, a.nudge_when, a.kick, dr, a.hold, a.z_bands, a.wide)
+            for s in range(a.start, a.end)]
     counts, t0 = {}, time.time()
     print(f"Recording seeds {a.start}-{a.end - 1} into {a.out} with {a.workers} worker(s)")
 

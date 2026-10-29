@@ -1,0 +1,15 @@
+{
+ "1": {
+  "scenes": 50,
+  "success_rate": 0.0,
+  "median_final_err_cm": 161.78,
+  "mean_time_to_reach_s": NaN,
+  "torque_jerk": 0.39358599999999994,
+  "wheel_jerk": 0.13502,
+  "think_us_per_step": 206.726,
+  "outcomes": {
+   "crashed_base": 48,
+   "crashed_ground": 2
+  }
+ }
+}

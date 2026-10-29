@@ -31,6 +31,20 @@ OOD_START_R = (1.0, 2.0)
 
 BENCHMARK_SEED_OFFSET = 1_000_000
 
+# "Objects anywhere" (tier 6 and collect.py --wide): the object can be much closer or further, lower or
+# higher, including places the arm cannot reach (too high) or should not try (on the floor).
+WIDE_TARGET_R = (0.5, 3.0)
+WIDE_TARGET_Z = (0.05, 1.6)
+WIDE_START_R = (0.0, 2.0)
+
+
+def wide_training_scene(seed):
+    """Training scene with the object anywhere in the wide range (seeds in the training block)."""
+    if seed >= BENCHMARK_SEED_OFFSET:
+        raise ValueError("Seeds >= 1,000,000 are reserved for the benchmark.")
+    rng = np.random.default_rng([seed, 6])
+    return sample_target(rng, WIDE_TARGET_R, WIDE_TARGET_Z), sample_start(rng, WIDE_START_R)
+
 
 def _uniform_disc(rng, r_range):
     """Uniform over the AREA of an annulus (not uniform in radius, which bunches near the centre)."""
@@ -79,6 +93,8 @@ def benchmark_scene(tier, index):
     Tier 2  out-of-distribution targets: higher (1.10-1.25 m) or farther (2.0-2.5 m) than training.
     Tier 3  unusual starts: half start far (1-2 m) facing away from the parking spot,
             half start close (0.3-0.7 m) to it, where the expert sometimes orbits.
+    Tier 6  objects anywhere: targets 0.5-3 m away and 0.05-1.6 m high (some unreachable), starts up to 2 m.
+    Tier 5  changed physics: floor friction 0.5-1.3 (template 1.0) and base mass x0.7-1.3 (added in Stage B).
     Tier 4  disturbances: tier-1-like scenes plus sensor noise and a command delay. (A sideways shove
             was tried and dropped: the template's expert never re-aligns once pushed off its heading
             and orbits instead, so the EXPERT fails every shoved scene; see README.)
@@ -113,6 +129,15 @@ def benchmark_scene(tier, index):
             "delay_steps": int(rng.choice([1, 2, 3, 4])),          # command arrives this many ms late (expert
                                                                    # survives up to 4 ms; 6 ms crashes it)
         }
+    elif tier == 6:
+        # Objects anywhere: wide target range incl. unreachable (too high) and floor-level targets
+        target, start = sample_target(rng, WIDE_TARGET_R, WIDE_TARGET_Z), sample_start(rng, WIDE_START_R)
+    elif tier == 5:
+        # Changed physics (Stage B): slippier or grippier floor, lighter or heavier base. Partly beyond
+        # the training randomisation (friction 0.6-1.2, mass x0.8-1.2) to test generalisation.
+        target, start = sample_target(rng), sample_start(rng)
+        disturbance = {"floor_friction": float(rng.uniform(0.5, 1.3)),
+                       "base_mass_scale": float(rng.uniform(0.7, 1.3))}
     else:
         raise ValueError(f"unknown tier {tier}")
     return {"tier": tier, "index": index, "seed": seed, "target": [float(v) for v in target],

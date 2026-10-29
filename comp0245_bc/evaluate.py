@@ -32,10 +32,11 @@ def _init_worker():
 
 
 def _one(job):
-    spec, scene, max_time, plot_path = job
+    spec, scene, max_time, plot_path, hold = job
     from rollout import make_policy, rollout
+    scene = dict(scene)
     try:
-        metrics, traj = rollout(make_policy(spec), scene, max_time=max_time)
+        metrics, traj = rollout(make_policy(spec), scene, max_time=max_time, hold_s=hold)
     except Exception as exc:
         return {"tier": scene["tier"], "index": scene["index"], "seed": scene["seed"],
                 "outcome": f"error: {type(exc).__name__}: {exc}", "success": False}
@@ -94,10 +95,14 @@ def main():
     ap.add_argument("--plots", type=int, default=3, help="plot the first k drives of each tier")
     ap.add_argument("--scenes", default=os.path.join(HERE, "benchmark", "scenes.json"))
     ap.add_argument("--out", default=os.path.join(HERE, "results"))
+    ap.add_argument("--hold", type=float, default=0.0,
+                    help="stricter success: the hand must stay within 1 cm this many seconds (results get _hold<s>)")
+    ap.add_argument("--only", choices=["noise", "delay"],
+                    help="diagnosis: keep only this part of each scene's disturbance (tier 4: noise vs delay)")
     a = ap.parse_args()
 
     policy_file = a.policy.rsplit(":", 1)[0] if a.policy.endswith((":mlp_arm", ":mlp_wheels")) else a.policy
-    if a.policy != "expert" and not os.path.exists(policy_file):
+    if a.policy not in ("expert", "markov_expert") and not os.path.exists(policy_file):
         print(f"Policy file not found: {a.policy}")
         return
     if not os.path.exists(a.scenes):
@@ -105,18 +110,25 @@ def main():
         return
     with open(a.scenes) as fh:
         scenes = json.load(fh)["scenes"]
-    name = "expert" if a.policy == "expert" else os.path.splitext(os.path.basename(policy_file))[0]
+    name = a.policy if a.policy in ("expert", "markov_expert") else os.path.splitext(os.path.basename(policy_file))[0]
     if policy_file.endswith(".pkl"):
         print("note: a random forest predicts far slower than an MLP; each drive takes longer")
     if policy_file != a.policy:
         name += "_" + a.policy.rsplit(":", 1)[1]
+    if a.hold > 0:
+        name += f"_hold{a.hold:g}"
+    if a.only:
+        keep = {"noise": "obs_noise", "delay": "delay_steps"}[a.only]
+        for s in scenes:
+            s["disturbance"] = {k: v for k, v in (s.get("disturbance") or {}).items() if k == keep}
+        name += f"_{a.only}only"
     os.makedirs(a.out, exist_ok=True)
 
     summaries = {}
     for tier in a.tiers:
         chosen = [s for s in scenes if s["tier"] == tier][: a.n]
         jobs = [(a.policy, s, a.max_time,
-                 os.path.join(a.out, f"{name}_t{tier}_{s['index']:02d}.png") if i < a.plots else None)
+                 os.path.join(a.out, f"{name}_t{tier}_{s['index']:02d}.png") if i < a.plots else None, a.hold)
                 for i, s in enumerate(chosen)]
         print(f"\n{name}: tier {tier}, {len(jobs)} scenes")
         t0, rows = time.time(), []

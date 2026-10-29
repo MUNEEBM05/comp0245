@@ -1,0 +1,211 @@
+{
+ "rules": {
+  "slow": "took longer than 2.5x the median time for its distance",
+  "detour": "base path more than 2x the straight-line distance to the parking spot (circling)",
+  "nav_timeout": "the base never parked properly; the 25 s navigation timeout ended the drive phase"
+ },
+ "note": "successful expert drives judged anomalous; exclude from TRAINING only (validation and test stay unchanged)",
+ "runs": [
+  {
+   "file": "data/runs/run_00032.npz",
+   "seed": 32,
+   "set": "train",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.6,
+   "path_m": 0.8,
+   "straight_m": 0.4
+  },
+  {
+   "file": "data/runs/run_00048.npz",
+   "seed": 48,
+   "set": "train",
+   "why": [
+    "detour"
+   ],
+   "time_s": 9.4,
+   "path_m": 0.7,
+   "straight_m": 0.29
+  },
+  {
+   "file": "data/runs/run_00049.npz",
+   "seed": 49,
+   "set": "test",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.0,
+   "path_m": 0.66,
+   "straight_m": 0.31
+  },
+  {
+   "file": "data/runs/run_00132.npz",
+   "seed": 132,
+   "set": "train",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.8,
+   "path_m": 0.93,
+   "straight_m": 0.42
+  },
+  {
+   "file": "data/runs/run_00188.npz",
+   "seed": 188,
+   "set": "test",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.0,
+   "path_m": 0.68,
+   "straight_m": 0.3
+  },
+  {
+   "file": "data/runs/run_00211.npz",
+   "seed": 211,
+   "set": "train",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.7,
+   "path_m": 0.67,
+   "straight_m": 0.27
+  },
+  {
+   "file": "data/runs_nudged/run_10016.npz",
+   "seed": 10016,
+   "set": "runs_nudged",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.2,
+   "path_m": 0.85,
+   "straight_m": 0.4
+  },
+  {
+   "file": "data/runs_nudged/run_10024.npz",
+   "seed": 10024,
+   "set": "runs_nudged",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.6,
+   "path_m": 0.95,
+   "straight_m": 0.47
+  },
+  {
+   "file": "data/runs_nudged/run_10127.npz",
+   "seed": 10127,
+   "set": "runs_nudged",
+   "why": [
+    "detour"
+   ],
+   "time_s": 9.6,
+   "path_m": 0.92,
+   "straight_m": 0.26
+  },
+  {
+   "file": "data/runs_reach/run_20006.npz",
+   "seed": 20006,
+   "set": "runs_reach",
+   "why": [
+    "detour"
+   ],
+   "time_s": 10.2,
+   "path_m": 0.98,
+   "straight_m": 0.49
+  },
+  {
+   "file": "data/runs_reach/run_20011.npz",
+   "seed": 20011,
+   "set": "runs_reach",
+   "why": [
+    "detour"
+   ],
+   "time_s": 9.8,
+   "path_m": 0.81,
+   "straight_m": 0.38
+  },
+  {
+   "file": "data/runs_reach/run_20067.npz",
+   "seed": 20067,
+   "set": "runs_reach",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.9,
+   "path_m": 0.67,
+   "straight_m": 0.32
+  },
+  {
+   "file": "data/runs_reach/run_20114.npz",
+   "seed": 20114,
+   "set": "runs_reach",
+   "why": [
+    "slow",
+    "detour",
+    "nav_timeout"
+   ],
+   "time_s": 31.0,
+   "path_m": 1.74,
+   "straight_m": 0.09
+  },
+  {
+   "file": "data/runs_kick/run_30075.npz",
+   "seed": 30075,
+   "set": "runs_kick",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.0,
+   "path_m": 0.79,
+   "straight_m": 0.38
+  },
+  {
+   "file": "data/runs_kick/run_30081.npz",
+   "seed": 30081,
+   "set": "runs_kick",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.5,
+   "path_m": 0.75,
+   "straight_m": 0.28
+  },
+  {
+   "file": "data/runs_kick/run_30090.npz",
+   "seed": 30090,
+   "set": "runs_kick",
+   "why": [
+    "detour"
+   ],
+   "time_s": 9.1,
+   "path_m": 0.72,
+   "straight_m": 0.17
+  },
+  {
+   "file": "data/runs_kick/run_30099.npz",
+   "seed": 30099,
+   "set": "runs_kick",
+   "why": [
+    "slow",
+    "detour"
+   ],
+   "time_s": 26.3,
+   "path_m": 1.17,
+   "straight_m": 0.08
+  },
+  {
+   "file": "data/runs_kick/run_30113.npz",
+   "seed": 30113,
+   "set": "runs_kick",
+   "why": [
+    "detour"
+   ],
+   "time_s": 8.2,
+   "path_m": 0.76,
+   "straight_m": 0.31
+  }
+ ]
+}

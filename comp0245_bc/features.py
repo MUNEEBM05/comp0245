@@ -30,6 +30,10 @@ FEATURE_NAMES = (
     + [f"q{i}" for i in range(1, 8)]                 # arm joint angles
     + [f"qd{i}" for i in range(1, 8)]                # arm joint speeds
 )
+# Absolute map positions in the basic group. --relative drops them: all other inputs are seen from the
+# robot (or are joint angles), so the model no longer depends on where on the map it is.
+ABSOLUTE_NAMES = ["tgt_x", "tgt_y", "base_x", "base_y"]
+ABSOLUTE_IDX = [FEATURE_NAMES.index(n) for n in ABSOLUTE_NAMES]
 OUTPUT_NAMES = [f"torque_{i}" for i in range(1, 8)] + ["wheel_fr", "wheel_fl", "wheel_bl", "wheel_br"]
 
 
@@ -199,7 +203,7 @@ def run_integral(arrays, log_dt=0.01):
 WHEEL_VEL_NAMES = ["wheel_vel_fr", "wheel_vel_fl", "wheel_vel_bl", "wheel_vel_br"]
 
 
-def run_xy_full(arrays, history=False, goal=False, integral=False, action="torque", wheel_vel=False):
+def run_xy_full(arrays, history=False, goal=False, integral=False, action="torque", wheel_vel=False, ik=False):
     """Inputs and outputs with all optional groups.
 
     action="torque":    outputs = 7 arm torques + 4 wheel speeds (the brief's outputs)
@@ -211,6 +215,9 @@ def run_xy_full(arrays, history=False, goal=False, integral=False, action="torqu
         X = np.column_stack([X, run_integral(arrays)])
     if wheel_vel:   # measured wheel speeds (qd_mes 0-3): risk of the "copycat" shortcut, tested as an ablation
         X = np.column_stack([X, arrays["qd_mes"][:, 0:4]]).astype(np.float32)
+    if ik:          # the joint speeds the arm's geometry asks for (see ik_features.py)
+        from ik_features import run_ik
+        X = np.column_stack([X, run_ik(arrays)]).astype(np.float32)
     if action == "reference":
         q = arrays["q_mes"][:, ARM]
         Y = np.column_stack([arrays["q_des_arm"] - q, arrays["qd_des_arm"], arrays["wheel_cmds"]]).astype(np.float32)
@@ -224,6 +231,7 @@ def output_names(action="torque"):
     return OUTPUT_NAMES
 
 
-def feature_names_full(history=False, goal=False, integral=False, wheel_vel=False):
+def feature_names_full(history=False, goal=False, integral=False, wheel_vel=False, ik=False):
+    from ik_features import IK_NAMES
     return (feature_names(history, goal) + (INTEGRAL_NAMES if integral else [])
-            + (WHEEL_VEL_NAMES if wheel_vel else []))
+            + (WHEEL_VEL_NAMES if wheel_vel else []) + (IK_NAMES if ik else []))

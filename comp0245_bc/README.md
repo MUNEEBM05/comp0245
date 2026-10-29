@@ -165,7 +165,18 @@ with 95% confidence ranges, because 50 scenes leave ±13 points of uncertainty.
 
 ![tiers](figures/tiers.png)
 
-Tier 2–4 results: `python compare.py --results results50 --tier 2` (and 3, 4).
+| Tier | Expert | Final model K |
+|---|---|---|
+| 1 normal scenes | 98% | 72% |
+| 2 harder targets (higher / farther than training) | 100% | 62% |
+| 3 awkward starts | 100% | 78% |
+| 4 sensor noise + 1–4 ms delay | 82% | **0%** |
+
+K generalises to new targets and starts (tiers 2–3 stay within ~10 points of tier 1) but collapses
+under sensor noise and delay. Its inputs include joint speeds and 0.1 s motion deltas, which
+amplify 1–2 cm position noise into large spikes, and the network has never seen such inputs; the
+expert's PD controller is physically damped. This is the Stage B problem: train on noisy recordings
+(domain randomisation) and smooth the derived inputs. All tables: `benchmark/RESULTS.md`.
 
 **A disturbance we had to drop.** Tier 4 originally also shoved the base sideways (100–300 N for
 0.1 s). The *expert* then failed 47 of 50 scenes: once pushed off its heading it never re-enters

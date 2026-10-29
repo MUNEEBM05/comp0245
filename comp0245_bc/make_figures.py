@@ -76,10 +76,10 @@ def fig_ladder(results, out):
         ax.text(a + 0.01, i, f"{100 * a:.0f}%  (n={n})", va="center", fontsize=9)
     ax.set_yticks(y, labels)
     ax.invert_yaxis()
-    ax.set_xlim(0, 1.35)
+    ax.set_xlim(0, 1.3)
     ax.set_xlabel("success rate on the frozen tier-1 benchmark")
     ax.set_title("Stage A: each fix, tested on the same scenes")
-    ax.legend(loc="lower right", fontsize=8, bbox_to_anchor=(1.0, 1.0))
+    ax.legend(loc="lower right", fontsize=8)
     ax.grid(axis="x", alpha=0.3)
     fig.tight_layout()
     fig.savefig(out, dpi=130)
@@ -133,7 +133,10 @@ def fig_offline_online(results, out):
                 meta = pickle.load(fh)["meta"]
         else:
             meta = json.loads(str(np.load(model_file)["meta"]))
-        pts.append((meta["val_mse_standardised"], rates(rows)[1], label))
+        mse = meta.get("val_mse_standardised", meta.get("best_val_mse"))   # older files use the old key
+        if mse is None:
+            continue
+        pts.append((mse, rates(rows)[1], label))
     fig, ax = plt.subplots(figsize=(7, 4.5))
     for x, y, label in pts:
         ax.scatter(x, y, s=50, color="#2f6fd6")
