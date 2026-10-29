@@ -50,19 +50,17 @@ MODEL_FAMILIES = [
 
 # The same recipe trained with three random seeds: is the result repeatable?
 SEED_FAMILIES = [
-    ("P (hold data)", ["vP_hold", "vP_hold_s1", "vP_hold_s2"]),
-    ("R (+ arm IK)", ["vR_ik", "vR_ik_s1", "vR_ik_s2"]),
+    ("model P\n(MLP + hold data)", ["vP_hold", "vP_hold_s1", "vP_hold_s2"]),
+    ("model R\n(P + arm IK inputs)", ["vR_ik", "vR_ik_s1", "vR_ik_s2"]),
 ]
 
-# Who drives what, all judged on "reached + held 5 s": (results name, label)
+# Who drives what, judged on "reached + held 5 s". One group per arm driver:
+# (label, results name with the expert driving the base, results name with the same driver on the base)
 # _mlp_arm = expert drives the base, our model the arm; _mlp_wheels = the reverse.
 ARM_VS_BASE = [
-    ("expert", "expert arm + expert base"),
-    ("vP_hold_mlp_wheels", "expert arm + P base"),
-    ("vP_hold_mlp_arm", "P arm + expert base"),
-    ("vP_hold", "P arm + P base"),
-    ("vR_ik_mlp_arm", "R arm + expert base"),
-    ("vR_ik", "R arm + R base"),
+    ("expert", "expert", "vP_hold_mlp_wheels"),
+    ("model P", "vP_hold_mlp_arm", "vP_hold"),
+    ("model R", "vR_ik_mlp_arm", "vR_ik"),
 ]
 
 # Test sets for the generalisation figure: (label, tier, results folder)
@@ -73,7 +71,7 @@ TEST_SETS = [
     ("tier 3\nodd starts", 3, "results50"),
     ("tier 6\nobjects", 6, "results50"),
 ]
-GENERAL_MODELS = [("vR_ik", "R"), ("expert", "expert")]
+GENERAL_MODELS = [("vR_ik", "model R"), ("expert", "expert")]
 
 # ---- One look for every figure: IEEE column width (3.5 in), text >= 8 pt ----------------------
 plt.rcParams.update({"font.size": 8, "axes.titlesize": 8, "legend.fontsize": 7,
@@ -97,7 +95,10 @@ def success(model, tier=1, hold=False, results="results50"):
     return sum(r["success"] == "True" for r in rows), len(rows)
 
 
-def bars(ax, x, counts, color, width, label, horizontal=False):
+CI_LABEL = "95% confidence range"
+
+
+def bars(ax, x, counts, color, width, label, ci_label=None):
     """Bars in % with Wilson 95% error bars; a model without that result gets no bar."""
     have = [(xi, c) for xi, c in zip(x, counts) if c is not None]
     if not have:
@@ -105,13 +106,20 @@ def bars(ax, x, counts, color, width, label, horizontal=False):
     xs = [xi for xi, _ in have]
     pct = np.array([100 * k / n for _, (k, n) in have])
     lo, hi = np.array([wilson(k, n) for _, (k, n) in have]).T * 100
-    err = [pct - lo, hi - pct]
-    if horizontal:
-        ax.barh(xs, pct, width, color=color, label=label)
-        ax.errorbar(pct, xs, xerr=err, fmt="none", ecolor="black", elinewidth=0.6, capsize=1.5)
-    else:
-        ax.bar(xs, pct, width, color=color, label=label)
-        ax.errorbar(xs, pct, yerr=err, fmt="none", ecolor="black", elinewidth=0.6, capsize=1.5)
+    ax.bar(xs, pct, width, color=color, label=label)
+    ax.errorbar(xs, pct, yerr=[pct - lo, hi - pct], fmt="none", ecolor="black", elinewidth=0.6,
+                capsize=1.5, label=ci_label)
+
+
+def missing(ax, x, counts, y=3, text="not\ntested"):
+    """Write 'not tested' where a result does not exist, so it is not read as 0%."""
+    for xi, c in zip(x, counts):
+        if c is None:
+            ax.text(xi, y, text, ha="center", va="bottom", fontsize=6, color="0.4")
+
+
+def legend_above(ax, ncol=2):
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=ncol, frameon=False)
 
 
 def runs_plot(families, group, name):
@@ -119,19 +127,20 @@ def runs_plot(families, group, name):
     x = np.arange(len(families))
     w = 0.4
     fig, ax = plt.subplots(figsize=(COL_W, COL_H))
-    for dx, hold, color, label in ((-w / 2, False, REACHED, "reached (1 cm)"),
-                                   (w / 2, True, HELD, "reached + held 5 s")):
+    dot_label = "one training run (seed)"
+    for dx, hold, color, label in ((-w / 2, False, REACHED, "reached (1 cm), mean"),
+                                   (w / 2, True, HELD, "reached + held 5 s, mean")):
         for xi, (_, runs) in zip(x + dx, families):
             pct = [100 * k / n for k, n in filter(None, (success(r, hold=hold) for r in runs))]
             if not pct:
                 continue
             ax.bar(xi, np.mean(pct), w, color=color, label=label)
-            ax.scatter([xi] * len(pct), pct, s=8, color="black", zorder=3)
-            label = None  # legend entry only once per colour
+            ax.scatter([xi] * len(pct), pct, s=8, color="black", zorder=3, clip_on=False, label=dot_label)
+            label = dot_label = None  # legend entry only once each
     ax.set_xticks(x, [lab for lab, _ in families])
     ax.set_ylabel("success on 50 tier-1 scenes (%)")
-    ax.set_ylim(0, 100)
-    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=2, frameon=False)
+    ax.set_ylim(0, 105)
+    legend_above(ax)
     save(fig, group, name)
 
 
@@ -149,12 +158,16 @@ def fig_ladder():
     x = np.arange(len(LADDER))
     w = 0.4
     fig, ax = plt.subplots(figsize=(COL_W, COL_H))
-    bars(ax, x - w / 2, [success(m) for m, _ in LADDER], REACHED, w, "reached (1 cm)")
-    bars(ax, x + w / 2, [success(m, hold=True) for m, _ in LADDER], HELD, w, "reached + held 5 s")
+    held = [success(m, hold=True) for m, _ in LADDER]
+    bars(ax, x - w / 2, [success(m) for m, _ in LADDER], REACHED, w, "reached (1 cm)", CI_LABEL)
+    bars(ax, x + w / 2, held, HELD, w, "reached + held 5 s")
+    first = next(i for i, c in enumerate(held) if c is not None)   # the hold test starts here
+    ax.text(1.5, 55, f"held 5 s not tested\nbefore {LADDER[first][1].split()[0]}", ha="center",
+            fontsize=6, color="0.4")
     ax.set_xticks(x, [lab for _, lab in LADDER], rotation=45, ha="right")
     ax.set_ylabel("success on 50 tier-1 scenes (%)")
     ax.set_ylim(0, 105)
-    ax.legend(loc="upper left", frameon=False)
+    legend_above(ax)
     save(fig, "story", "ladder")
 
 
@@ -167,13 +180,19 @@ def fig_seeds():
 
 
 def fig_arm_vs_base():
-    """Swap our model's arm or base for the expert's: which half fails to hold still?"""
-    y = np.arange(len(ARM_VS_BASE))[::-1]
-    fig, ax = plt.subplots(figsize=(COL_W, 2.0))
-    bars(ax, y, [success(m, hold=True) for m, _ in ARM_VS_BASE], HELD, 0.6, None, horizontal=True)
-    ax.set_yticks(y, [lab for _, lab in ARM_VS_BASE])
-    ax.set_xlabel("reached + held 5 s, tier 1 (%)")
-    ax.set_xlim(0, 100)
+    """Swap test: does success follow whoever drives the ARM, whoever drives the base doesn't matter?"""
+    x = np.arange(len(ARM_VS_BASE))
+    w = 0.38
+    fig, ax = plt.subplots(figsize=(COL_W, COL_H))
+    bars(ax, x - w / 2, [success(m, hold=True) for _, m, _ in ARM_VS_BASE], EXPERT, w,
+         "base driven by the expert")
+    bars(ax, x + w / 2, [success(m, hold=True) for _, _, m in ARM_VS_BASE], HELD, w,
+         "base driven by our model P / R", CI_LABEL)
+    ax.set_xticks(x, [lab for lab, _, _ in ARM_VS_BASE])
+    ax.set_xlabel("who drives the arm")
+    ax.set_ylabel("reached + held 5 s, tier 1 (%)")
+    ax.set_ylim(0, 105)
+    legend_above(ax, ncol=1)
     save(fig, "diagnosis", "arm_vs_base")
 
 
@@ -181,17 +200,18 @@ def fig_generalisation():
     """Model R vs the expert on each test set; top = reached, bottom = reached + held 5 s."""
     x = np.arange(len(TEST_SETS))
     w = 0.38
-    fig, axes = plt.subplots(2, 1, figsize=(COL_W, 3.2), sharex=True)
-    for ax, hold, title in ((axes[0], False, "reached (1 cm)"), (axes[1], True, "reached + held 5 s")):
-        for (model, label), dx, color in zip(GENERAL_MODELS, (-w / 2, w / 2),
-                                             (HELD if hold else REACHED, EXPERT_HELD if hold else EXPERT)):
-            counts = [success(model, tier, hold, folder) for _, tier, folder in TEST_SETS]
-            bars(ax, x + dx, counts, color, w, label)
+    fig, axes = plt.subplots(2, 1, figsize=(COL_W, 3.6))
+    for ax, hold, ylabel in ((axes[0], False, "reached 1 cm (%)"), (axes[1], True, "reached + held 5 s (%)")):
+        counts = {}
+        for (model, label), dx, color in zip(GENERAL_MODELS, (-w / 2, w / 2), (REACHED, EXPERT)):
+            counts[model] = [success(model, tier, hold, folder) for _, tier, folder in TEST_SETS]
+            bars(ax, x + dx, counts[model], color, w, label, CI_LABEL if model == "expert" else None)
+        missing(ax, x, [None if all(c[i] is None for c in counts.values()) else 1 for i in x])
+        ax.set_xticks(x, [lab for lab, _, _ in TEST_SETS])
         ax.set_ylim(0, 105)
-        ax.set_ylabel("success (%)")
-        ax.set_title(title, loc="left")
-        ax.legend(loc="lower right", bbox_to_anchor=(1.0, 0.97), frameon=False, ncol=2)
-    axes[1].set_xticks(x, [lab for lab, _, _ in TEST_SETS])
+        ax.set_ylabel(ylabel)
+    legend_above(axes[0], ncol=3)
+    fig.tight_layout(h_pad=0.8)
     save(fig, "generalisation", "generalisation")
 
 
