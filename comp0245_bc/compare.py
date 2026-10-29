@@ -3,6 +3,7 @@
     python compare.py --results results50                               # every policy, tier 1
     python compare.py --results results50 --tier 2 --policies expert vK_kick
     python compare.py --results results50 --markdown                    # table for the README / report
+    python compare.py --results results_stageb/tiers --tier 4          # all Stage B models (searches subfolders)
 
 Columns: success within 1 cm (the task's tolerance) with a 95% Wilson confidence range (how much
 of the number could be luck with this many scenes), within 2 cm and 5 cm (looser tolerances, judged
@@ -40,8 +41,9 @@ def main():
     ap.add_argument("--markdown", action="store_true", help="print a markdown table (for the README / report)")
     a = ap.parse_args()
 
+    # "**" also searches subfolders (e.g. results_stageb/tiers/<model>/), and still works on flat folders
     files = {os.path.basename(f)[: -len(f"_tier{a.tier}.csv")]: f
-             for f in glob.glob(os.path.join(a.results, f"*_tier{a.tier}.csv"))}
+             for f in glob.glob(os.path.join(a.results, "**", f"*_tier{a.tier}.csv"), recursive=True)}
     names = a.policies or sorted(files, key=lambda n: (n != "expert", n))
     rows = []
     for n in names:
