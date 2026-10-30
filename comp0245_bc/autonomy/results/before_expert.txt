@@ -1,0 +1,165 @@
+
+expert: tier 10, 30 scenes
+  [  1/30] scene  1: reached        err    1.0 cm | t  11.8 s
+  [  2/30] scene  2: reached        err    1.0 cm | t  14.8 s
+  [  3/30] scene  0: reached        err    1.0 cm | t  14.9 s
+  [  4/30] scene  3: reached        err    1.0 cm | t  13.4 s
+  [  5/30] scene  5: reached        err    1.0 cm | t  13.7 s
+  [  6/30] scene  4: reached        err    1.0 cm | t  14.7 s
+  [  7/30] scene  8: reached        err    1.0 cm | t  11.2 s
+  [  8/30] scene  6: reached        err    1.0 cm | t  18.1 s
+  [  9/30] scene  7: reached        err    1.0 cm | t  15.4 s
+  [ 10/30] scene 11: reached        err    1.0 cm | t  11.7 s
+  [ 11/30] scene  9: reached        err    1.0 cm | t  15.7 s
+  [ 12/30] scene 10: reached        err    1.0 cm | t  15.4 s
+  [ 13/30] scene 12: reached        err    1.0 cm | t  14.1 s
+  [ 14/30] scene 13: reached        err    1.0 cm | t  14.5 s
+  [ 15/30] scene 14: reached        err    1.0 cm | t  14.2 s
+  [ 16/30] scene 15: reached        err    1.0 cm | t  16.2 s
+  [ 17/30] scene 16: reached        err    1.0 cm | t  15.2 s
+  [ 18/30] scene 17: reached        err    1.0 cm | t  15.2 s
+  [ 19/30] scene 19: reached        err    1.0 cm | t  13.1 s
+  [ 20/30] scene 18: reached        err    1.0 cm | t  15.1 s
+  [ 21/30] scene 20: reached        err    1.0 cm | t  14.4 s
+  [ 22/30] scene 22: reached        err    1.0 cm | t  12.7 s
+  [ 23/30] scene 21: reached        err    1.0 cm | t  14.3 s
+  [ 24/30] scene 23: reached        err    1.0 cm | t  13.1 s
+  [ 25/30] scene 25: reached        err    1.0 cm | t  13.1 s
+  [ 26/30] scene 26: reached        err    1.0 cm | t  12.3 s
+  [ 27/30] scene 24: reached        err    1.0 cm | t  15.3 s
+  [ 28/30] scene 29: reached        err    1.0 cm | t  12.6 s
+  [ 29/30] scene 28: reached        err    1.0 cm | t  13.8 s
+  [ 30/30] scene 27: reached        err    1.0 cm | t  16.7 s
+  -> success 100% | median final error 1.0 cm | time to reach 14.2 s | {'reached': 30} | 2.1 min
+
+expert: tier 11, 30 scenes
+  [  1/30] scene  1: crashed_obstacle err  191.8 cm | t   2.5 s
+  [  2/30] scene  0: crashed_obstacle err  237.7 cm | t   4.5 s
+  [  3/30] scene  2: crashed_obstacle err  150.8 cm | t   6.4 s
+  [  4/30] scene  4: crashed_obstacle err  248.5 cm | t   2.5 s
+  [  5/30] scene  3: crashed_obstacle err  164.6 cm | t   4.7 s
+  [  6/30] scene  6: crashed_obstacle err  220.2 cm | t   2.8 s
+  [  7/30] scene  7: crashed_obstacle err  228.4 cm | t   2.4 s
+  [  8/30] scene  5: crashed_obstacle err  212.0 cm | t   5.5 s
+  [  9/30] scene  9: crashed_obstacle err  246.4 cm | t   2.3 s
+  [ 10/30] scene  8: crashed_obstacle err  181.0 cm | t   3.2 s
+  [ 11/30] scene 10: crashed_obstacle err  159.3 cm | t   2.8 s
+  [ 12/30] scene 11: crashed_obstacle err  219.0 cm | t   3.0 s
+  [ 13/30] scene 12: crashed_obstacle err  247.4 cm | t   3.4 s
+  [ 14/30] scene 13: crashed_obstacle err  225.5 cm | t   5.5 s
+  [ 15/30] scene 14: crashed_obstacle err  190.9 cm | t   4.0 s
+  [ 16/30] scene 15: crashed_obstacle err  214.8 cm | t   3.2 s
+  [ 17/30] scene 17: crashed_obstacle err  173.9 cm | t   2.9 s
+  [ 18/30] scene 18: crashed_obstacle err  176.6 cm | t   3.6 s
+  [ 19/30] scene 16: crashed_obstacle err  170.6 cm | t   5.3 s
+  [ 20/30] scene 19: crashed_obstacle err  215.5 cm | t   1.5 s
+  [ 21/30] scene 21: crashed_obstacle err  213.7 cm | t   2.5 s
+  [ 22/30] scene 20: crashed_obstacle err  224.7 cm | t   4.0 s
+  [ 23/30] scene 22: crashed_obstacle err  198.6 cm | t   3.4 s
+  [ 24/30] scene 25: crashed_obstacle err  215.7 cm | t   1.4 s
+  [ 25/30] scene 24: crashed_obstacle err  243.9 cm | t   2.4 s
+  [ 26/30] scene 23: crashed_obstacle err  169.6 cm | t   4.0 s
+  [ 27/30] scene 26: crashed_obstacle err  239.4 cm | t   2.8 s
+  [ 28/30] scene 27: crashed_obstacle err  230.6 cm | t   3.5 s
+  [ 29/30] scene 28: crashed_obstacle err  218.0 cm | t   3.3 s
+  [ 30/30] scene 29: crashed_obstacle err  225.7 cm | t   5.2 s
+  -> success 0% | median final error 215.6 cm | time to reach nan s | {'crashed_obstacle': 30} | 0.6 min
+
+expert: tier 12, 30 scenes
+  [  1/30] scene  0: crashed_obstacle err  157.7 cm | t   5.5 s
+  [  2/30] scene  1: crashed_obstacle err  144.4 cm | t   6.3 s
+  [  3/30] scene  2: crashed_obstacle err  181.2 cm | t   6.4 s
+  [  4/30] scene  4: crashed_obstacle err  224.1 cm | t   2.0 s
+  [  5/30] scene  3: crashed_obstacle err  254.2 cm | t   4.2 s
+  [  6/30] scene  7: crashed_obstacle err  266.4 cm | t   3.9 s
+  [  7/30] scene  5: reached        err    1.0 cm | t  12.1 s
+  [  8/30] scene  6: reached        err    1.0 cm | t  12.4 s
+  [  9/30] scene  9: crashed_obstacle err  269.5 cm | t   4.5 s
+  [ 10/30] scene 10: crashed_obstacle err  249.5 cm | t   4.1 s
+  [ 11/30] scene  8: reached        err    1.0 cm | t  13.6 s
+  [ 12/30] scene 12: crashed_obstacle err  176.8 cm | t   4.0 s
+  [ 13/30] scene 13: crashed_obstacle err  221.6 cm | t   2.7 s
+  [ 14/30] scene 14: crashed_obstacle err  208.7 cm | t   2.4 s
+  [ 15/30] scene 11: reached        err    1.0 cm | t  11.6 s
+  [ 16/30] scene 17: crashed_obstacle err  216.6 cm | t   5.3 s
+  [ 17/30] scene 15: reached        err    1.0 cm | t  12.5 s
+  [ 18/30] scene 19: crashed_obstacle err  182.9 cm | t   3.1 s
+  [ 19/30] scene 16: reached        err    1.0 cm | t  16.7 s
+  [ 20/30] scene 21: crashed_obstacle err  228.8 cm | t   5.1 s
+  [ 21/30] scene 18: reached        err    1.0 cm | t  13.9 s
+  [ 22/30] scene 22: crashed_obstacle err  219.8 cm | t   5.1 s
+  [ 23/30] scene 23: crashed_obstacle err  218.1 cm | t   5.2 s
+  [ 24/30] scene 20: reached        err    1.0 cm | t  14.8 s
+  [ 25/30] scene 24: crashed_obstacle err  236.3 cm | t   4.4 s
+  [ 26/30] scene 26: crashed_obstacle err  255.9 cm | t   2.5 s
+  [ 27/30] scene 25: crashed_obstacle err  167.9 cm | t   5.3 s
+  [ 28/30] scene 27: crashed_obstacle err  243.4 cm | t   2.0 s
+  [ 29/30] scene 28: crashed_obstacle err  144.5 cm | t   5.1 s
+  [ 30/30] scene 29: crashed_obstacle err  163.8 cm | t   6.1 s
+  -> success 27% | median final error 182.1 cm | time to reach 13.5 s | {'crashed_obstacle': 22, 'reached': 8} | 1.0 min
+
+expert: tier 13, 30 scenes
+  [  1/30] scene  0: reached        err    1.0 cm | t  13.6 s
+  [  2/30] scene  1: reached        err    1.0 cm | t  14.6 s
+  [  3/30] scene  2: reached        err    1.0 cm | t  16.0 s
+  [  4/30] scene  5: reached        err    1.0 cm | t  12.4 s
+  [  5/30] scene  4: reached        err    1.0 cm | t  13.5 s
+  [  6/30] scene  3: reached        err    1.0 cm | t  14.5 s
+  [  7/30] scene  8: reached        err    1.0 cm | t  12.6 s
+  [  8/30] scene  7: reached        err    1.0 cm | t  17.1 s
+  [  9/30] scene  6: reached        err    1.0 cm | t  17.5 s
+  [ 10/30] scene  9: reached        err    1.0 cm | t  15.0 s
+  [ 11/30] scene 10: reached        err    1.0 cm | t  14.5 s
+  [ 12/30] scene 11: reached        err    1.0 cm | t  15.0 s
+  [ 13/30] scene 12: reached        err    1.0 cm | t  15.0 s
+  [ 14/30] scene 14: reached        err    1.0 cm | t  15.7 s
+  [ 15/30] scene 13: reached        err    1.0 cm | t  17.1 s
+  [ 16/30] scene 15: reached        err    1.0 cm | t  12.9 s
+  [ 17/30] scene 16: reached        err    1.0 cm | t  13.6 s
+  [ 18/30] scene 17: reached        err    1.0 cm | t  15.3 s
+  [ 19/30] scene 18: reached        err    1.0 cm | t  12.0 s
+  [ 20/30] scene 19: reached        err    1.0 cm | t  13.7 s
+  [ 21/30] scene 20: reached        err    1.0 cm | t  17.9 s
+  [ 22/30] scene 21: reached        err    1.0 cm | t  15.8 s
+  [ 23/30] scene 22: reached        err    1.0 cm | t  18.1 s
+  [ 24/30] scene 23: reached        err    1.0 cm | t  15.6 s
+  [ 25/30] scene 24: reached        err    1.0 cm | t  13.4 s
+  [ 26/30] scene 25: reached        err    1.0 cm | t  14.8 s
+  [ 27/30] scene 27: reached        err    1.0 cm | t  14.2 s
+  [ 28/30] scene 26: reached        err    1.0 cm | t  15.8 s
+  [ 29/30] scene 28: reached        err    1.0 cm | t  16.2 s
+  [ 30/30] scene 29: reached        err    1.0 cm | t  14.7 s
+  -> success 100% | median final error 1.0 cm | time to reach 14.9 s | {'reached': 30} | 2.0 min
+
+expert: tier 14, 30 scenes
+  [  1/30] scene  2: crashed_obstacle err  259.6 cm | t   1.9 s
+  [  2/30] scene  0: crashed_obstacle err  233.6 cm | t   2.3 s
+  [  3/30] scene  1: crashed_obstacle err  240.6 cm | t   4.2 s
+  [  4/30] scene  4: crashed_obstacle err  267.7 cm | t   1.6 s
+  [  5/30] scene  3: crashed_obstacle err  234.4 cm | t   2.5 s
+  [  6/30] scene  6: crashed_obstacle err  250.3 cm | t   1.6 s
+  [  7/30] scene  7: crashed_obstacle err  297.4 cm | t   2.7 s
+  [  8/30] scene  5: crashed_obstacle err  256.2 cm | t   4.1 s
+  [  9/30] scene  8: crashed_obstacle err  241.1 cm | t   2.4 s
+  [ 10/30] scene 10: crashed_obstacle err  260.1 cm | t   1.5 s
+  [ 11/30] scene  9: crashed_obstacle err  275.1 cm | t   2.8 s
+  [ 12/30] scene 13: crashed_obstacle err  244.3 cm | t   2.4 s
+  [ 13/30] scene 12: crashed_obstacle err  243.9 cm | t   3.7 s
+  [ 14/30] scene 11: crashed_obstacle err  260.8 cm | t   4.7 s
+  [ 15/30] scene 14: crashed_obstacle err  247.1 cm | t   2.6 s
+  [ 16/30] scene 15: crashed_obstacle err  230.9 cm | t   2.6 s
+  [ 17/30] scene 18: crashed_obstacle err  241.5 cm | t   1.5 s
+  [ 18/30] scene 16: crashed_obstacle err  257.6 cm | t   4.9 s
+  [ 19/30] scene 17: crashed_obstacle err  252.5 cm | t   2.3 s
+  [ 20/30] scene 19: crashed_obstacle err  275.7 cm | t   2.0 s
+  [ 21/30] scene 21: crashed_obstacle err  284.4 cm | t   2.0 s
+  [ 22/30] scene 20: crashed_obstacle err  256.6 cm | t   3.7 s
+  [ 23/30] scene 22: crashed_obstacle err  269.9 cm | t   0.9 s
+  [ 24/30] scene 24: crashed_obstacle err  295.2 cm | t   2.6 s
+  [ 25/30] scene 23: crashed_obstacle err  281.4 cm | t   4.1 s
+  [ 26/30] scene 25: crashed_obstacle err  232.1 cm | t   3.6 s
+  [ 27/30] scene 28: crashed_obstacle err  259.1 cm | t   3.0 s
+  [ 28/30] scene 26: crashed_obstacle err  273.6 cm | t   4.3 s
+  [ 29/30] scene 27: crashed_obstacle err  253.7 cm | t   3.7 s
+  [ 30/30] scene 29: crashed_obstacle err  257.3 cm | t   2.8 s
+  -> success 0% | median final error 257.0 cm | time to reach nan s | {'crashed_obstacle': 30} | 0.5 min

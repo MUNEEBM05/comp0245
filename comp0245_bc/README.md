@@ -1,3 +1,17 @@
+# Folder layout
+
+| Folder | What it is | Run from it? |
+|---|---|---|
+| `baseline/` | Stage A code and the K, A, B, C, long-memory, DAgger and noise experiments: `trained*/`, `results*/`, `figures/`, `new_test/`, `random_test/` | Yes |
+| `model_R/` | The team's model R snapshot: code, models, notes (`TEAM_TASKS.md`, `WHATS_NEW.md`, `PREPROCESSING.md`) and `results/`. Reference copy, kept unchanged | No, use `autonomy/` to run R |
+| `autonomy/` | New work: obstacles, lidar, planning, no map position, vision. Has its own working copy of R | Yes |
+| `data/`, `splits/`, `benchmark/`, `configs/`, `models/`, `RoboEnv/` | Shared by all of the above | - |
+
+Run commands from inside `baseline/` or `autonomy/`. For the 3D viewer in WSL, first run `export LIBGL_ALWAYS_SOFTWARE=1`.
+The commands below are from Stage A: run them from `baseline/`, with `..\data\` in place of `data\`.
+
+---
+
 # COMP0245 behaviour cloning: a mobile manipulator learns to reach
 
 A neural network that copies the template's expert controller for the Robotnik base + Kinova arm:
