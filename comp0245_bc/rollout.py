@@ -30,7 +30,7 @@ from expert_episode import (  # also imports the simulator quietly
     ARM, ARM_REACH_LIMIT, BASE_NAV_TIMEOUT, CONF_FILE_NAME, FIRST_CHECKED_ARM_JOINT, FIXED_FINGER_ANGLES,
     REACH_TOLERANCE, STANDOFF_POINTS, STANDOFF_Z_POINTS, MotorCommands, PinWrapper, p, pb, pin,
 )
-from features import HISTORY_LAGS_S, ErrorAverager, goal_features, history_features, make_features
+from features import HISTORY_LAGS_S, INTEGRAL_TAUS_S, ErrorAverager, goal_features, history_features, make_features
 from quiet import quiet_native
 from robotnik_arm_control import (
     ArmControllerParams, BaseControllerParams, BaseNavState, arm_controller, base_controller,
@@ -177,6 +177,8 @@ class MLPPolicy:
         self.name = os.path.splitext(os.path.basename(path))[0]
         meta0 = json.loads(str(z["meta"])) if "meta" in z.files else {}
         self.nets = []                                   # one network, or arm + wheels
+        # Optional: which input columns each network sees (train_dagger.py --wheel-taus); default all
+        self.cols = [meta0.get("group_inputs", {}).get(g) for g in meta0.get("groups", ["all"])]
         for g in meta0.get("groups", ["all"]):
             pre = "" if g == "all" else f"{g}_"
             n = int(z[f"{pre}n_layers"])
@@ -194,6 +196,7 @@ class MLPPolicy:
         self.history = meta.get("history_features", "none") == "deltas"
         self.goal = bool(meta.get("goal_features", False))
         self.integral = bool(meta.get("integral_features", False))
+        self.integral_taus = tuple(meta.get("integral_taus") or INTEGRAL_TAUS_S)   # older models: 0.5 s, 2 s
         self.wheel_vel = bool(meta.get("wheel_vel_features", False))
         self.action = meta.get("action", "torque")
         self.arm_params = ArmControllerParams(reach_limit=ARM_REACH_LIMIT)   # same Kp, Kd as the expert
@@ -207,7 +210,7 @@ class MLPPolicy:
         self.sample_every = max(1, int(round(0.01 / world.dt)))
         self.buf = deque(maxlen=int(round(max(HISTORY_LAGS_S) / 0.01)) + 1)
         self.k = 0
-        self.averager, self.avg_now = ErrorAverager(0.01), None
+        self.averager, self.avg_now = ErrorAverager(0.01, self.integral_taus), None
 
     def _history(self, obs):
         """History inputs: how the base and arm moved over the last 0.1 s and 0.5 s."""
@@ -227,8 +230,8 @@ class MLPPolicy:
         if self.forest is not None:
             return self.forest.predict(x) * self.y_std + self.y_mean
         outs = []
-        for Ws, bs in self.nets:
-            h = x
+        for (Ws, bs), cols in zip(self.nets, self.cols):
+            h = x if cols is None else x[:, cols]
             for i, (W, b) in enumerate(zip(Ws, bs)):
                 h = h @ W + b
                 if i < len(Ws) - 1:

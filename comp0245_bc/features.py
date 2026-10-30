@@ -173,26 +173,32 @@ INTEGRAL_TAUS_S = (0.5, 2.0)
 INTEGRAL_NAMES = [f"err_avg_{a}_{int(t * 1000)}ms" for t in INTEGRAL_TAUS_S for a in "xyz"]
 
 
+def integral_names(taus=INTEGRAL_TAUS_S):
+    """Names for any set of averaging windows (train_dagger.py --integral-taus adds longer ones)."""
+    return [f"err_avg_{a}_{int(t * 1000)}ms" for t in taus for a in "xyz"]
+
+
 class ErrorAverager:
     """Streaming version (for driving): call update(error) every 10 ms."""
 
-    def __init__(self, dt=0.01):
-        self.alpha = [np.exp(-dt / t) for t in INTEGRAL_TAUS_S]
+    def __init__(self, dt=0.01, taus=INTEGRAL_TAUS_S):
+        self.taus = tuple(taus)
+        self.alpha = [np.exp(-dt / t) for t in self.taus]
         self.avg = None
 
     def update(self, err):
         err = np.asarray(err, float)
         if self.avg is None:
-            self.avg = [err.copy() for _ in INTEGRAL_TAUS_S]
+            self.avg = [err.copy() for _ in self.taus]
         else:
             self.avg = [a * m + (1 - a) * err for a, m in zip(self.alpha, self.avg)]
         return np.concatenate(self.avg).astype(np.float32)
 
 
-def run_integral(arrays, log_dt=0.01):
+def run_integral(arrays, log_dt=0.01, taus=INTEGRAL_TAUS_S):
     """Integral features for a whole recorded run (rows are log_dt apart)."""
     err = (arrays["target"] - arrays["ee_pos"]).astype(float)
-    avg = ErrorAverager(log_dt)
+    avg = ErrorAverager(log_dt, taus)
     return np.array([avg.update(e) for e in err], dtype=np.float32)
 
 

@@ -1,0 +1,19 @@
+# Environment (not backed up)
+RoboEnv/
+
+# Too big for GitHub
+data.zip
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

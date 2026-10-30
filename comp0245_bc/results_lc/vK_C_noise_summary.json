@@ -1,0 +1,31 @@
+{
+ "1": {
+  "scenes": 50,
+  "success_rate": 0.74,
+  "median_final_err_cm": 1.0,
+  "mean_time_to_reach_s": 13.827162162162159,
+  "torque_jerk": 0.19745000000000004,
+  "wheel_jerk": 0.009182000000000001,
+  "think_us_per_step": 350.68799999999993,
+  "outcomes": {
+   "timeout": 12,
+   "reached": 37,
+   "crashed_base": 1
+  }
+ },
+ "4": {
+  "scenes": 50,
+  "success_rate": 0.3,
+  "median_final_err_cm": 15.004999999999999,
+  "mean_time_to_reach_s": 11.196799999999998,
+  "torque_jerk": 8.830986000000001,
+  "wheel_jerk": 0.065886,
+  "think_us_per_step": 347.024,
+  "outcomes": {
+   "timeout": 23,
+   "crashed_base": 6,
+   "crashed_ground": 6,
+   "reached": 15
+  }
+ }
+}

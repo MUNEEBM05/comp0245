@@ -85,7 +85,7 @@ def _classify_stop(message):
 
 def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz=100,
                 cmd_noise_std=0.0, noise_hold_s=0.3, nudge_when="always", kick_prob=0.0, kick_std=15.0,
-                use_gui=False, time_limit_s=None):
+                use_gui=False, time_limit_s=None, hold_after_reach_s=0.0):
     """Run the expert once and (optionally) save the recording.
 
     Args:
@@ -108,6 +108,10 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         kick_std:      size of the kick, N*m (clipped by the torque limit).
         use_gui:       open the PyBullet window (slow; for watching one run).
         time_limit_s:  wall-clock safety limit; the run is stopped and marked "timeout".
+        hold_after_reach_s: keep recording this long after the hand first gets within tolerance
+                       (the template stops at that instant, so recordings otherwise contain no rows
+                       inside 1 cm). The run still counts as reached; meta "reach_time" is the
+                       first reach, so the extra rows can be cut off again. 0 = template behaviour.
 
     Returns:
         dict with the summary ("meta") and the recorded arrays.
@@ -218,6 +222,7 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         current_time = 0.0
         step = 0
         nav_done_time = None
+        first_reach_time = None
         stop_message = None
         outcome = None
         ee_dist_error = np.inf
@@ -309,10 +314,18 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
             sim.Step(cmd, "torque")
 
             # --- Stop conditions (template) --------------------------------------------------
-            stop_message = check_stop(stop_criteria, current_time, dt, ee_dist_error, nav_done)
-            if stop_message:
-                outcome = _classify_stop(stop_message)
-                break
+            if first_reach_time is not None:
+                # Holding after the first reach: only the hold length (or the step cap) ends the run
+                if current_time - first_reach_time >= hold_after_reach_s or step >= max_steps:
+                    break
+            else:
+                stop_message = check_stop(stop_criteria, current_time, dt, ee_dist_error, nav_done)
+                if stop_message:
+                    outcome = _classify_stop(stop_message)
+                    within = outcome == "reached" or ee_dist_error < REACH_TOLERANCE
+                    if not (hold_after_reach_s > 0 and within):
+                        break
+                    first_reach_time, outcome = current_time, "reached"
             if time_limit_s and time.time() - wall_start > time_limit_s:
                 outcome, stop_message = "timeout", f"Wall-clock limit {time_limit_s}s"
                 break
@@ -327,6 +340,9 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
     template_outcome = outcome
     if outcome == "unreachable" and ee_dist_error < REACH_TOLERANCE:
         outcome = "reached"
+    if first_reach_time is not None:
+        # Reached before the hold ended; a collision during the hold is noted, not counted as failure
+        template_outcome, outcome = "reached", "reached"
 
     # ------------------------------------------------------------------------------------------
     # Package the recording: float32 arrays + a JSON summary ("meta"), one .npz per run.
@@ -354,7 +370,9 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         "template_outcome": template_outcome,
         "final_ee_error": ee_dist_error,
         "min_ee_error": float(min_ee_error),
-        "reach_time": float(current_time) if outcome == "reached" else None,
+        "reach_time": (float(first_reach_time) if first_reach_time is not None
+                       else float(current_time) if outcome == "reached" else None),
+        "hold_after_reach_s": float(hold_after_reach_s),
         "nav_done_time": nav_done_time,
         "nav_timed_out": bool(nav_done_time is not None and nav_done_time >= BASE_NAV_TIMEOUT - dt),
         "duration": float(current_time),
