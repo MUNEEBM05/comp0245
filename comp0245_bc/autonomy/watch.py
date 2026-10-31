@@ -10,6 +10,9 @@ Drawn:  red dots    lidar hits
         green line  the path the robot has actually driven
         grey dots   cells on the robot's map that count as occupied (planner policies only, with --show-map)
 
+--camera opens a second window: the depth camera's picture, a box around what it detects as the target, and its error.
+--camera-frames DIR also saves those views as pictures.
+
 The drawing has its own lidar with separate random noise and never touches the policy's decisions. Lidar height, range
 and rays are the ones in sensors.py. Prints the end-of-drive metrics after the window closes.
 """
@@ -21,6 +24,7 @@ import numpy as np
 
 from quiet import run_main
 from rollout import make_policy, rollout
+from camera import TargetCamera
 from sensors import LIDAR_HEIGHT_M, Lidar
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -30,17 +34,60 @@ TRAIL_EVERY_M = 0.05
 RED, BLUE, GREEN, GREY = [0.9, 0.1, 0.1], [0.1, 0.35, 0.95], [0.1, 0.7, 0.2], [0.35, 0.35, 0.35]
 
 
+class CameraWindow:
+    """What the camera sees, as a separate window. Uses its own camera object, so it cannot change the drive."""
+
+    def __init__(self, world, target, frames=None):
+        import matplotlib.pyplot as plt
+        self.plt, self.target, self.frames, self.n = plt, np.asarray(target, float), frames, 0
+        self.cam = TargetCamera(world, seed=98)
+        if frames:
+            os.makedirs(frames, exist_ok=True)
+        else:
+            plt.switch_backend("TkAgg")
+            plt.ion()
+        self.fig, self.ax = plt.subplots(figsize=(6.4, 5.2))
+        self.fig.canvas.manager.set_window_title("Robot camera") if not frames else None
+        self.im = self.ax.imshow(np.zeros((self.cam.h, self.cam.w, 3), np.uint8))
+        self.box = plt.Rectangle((0, 0), 1, 1, fill=False, edgecolor="lime", linewidth=2, visible=False)
+        self.ax.add_patch(self.box)
+        self.ax.set_axis_off()
+
+    def update(self, xy, yaw, t):
+        rgb, _ = self.cam.image(xy, yaw)
+        self.im.set_data(rgb)
+        r, g, b = rgb[..., 0].astype(int), rgb[..., 1].astype(int), rgb[..., 2].astype(int)
+        v, u = np.nonzero((r > 120) & (g < 60) & (b < 60))
+        m, n = self.cam.measure(xy, yaw)
+        if m is not None:
+            self.box.set_bounds(u.min() - 3, v.min() - 3, u.max() - u.min() + 6, v.max() - v.min() + 6)
+            self.box.set_visible(True)
+            err = 100 * np.linalg.norm(TargetCamera.to_world(m, xy, yaw) - self.target)
+            dist = np.linalg.norm(self.target[:2] - xy)
+            self.ax.set_title(f"t = {t:.1f} s | target seen, {n} pixels | {dist:.2f} m away | error {err:.1f} cm", fontsize=10)
+        else:
+            self.box.set_visible(False)
+            self.ax.set_title(f"t = {t:.1f} s | target not seen", fontsize=10)
+        if self.frames:
+            self.fig.savefig(os.path.join(self.frames, f"view_{self.n:04d}.png"), dpi=80)
+        else:
+            self.plt.pause(0.001)
+        self.n += 1
+
+
 class Overlay:
     """Wraps a policy and draws on top of it; the commands pass through unchanged."""
 
-    def __init__(self, policy, show_map=False, top=False):
+    def __init__(self, policy, show_map=False, top=False, camera=False, frames=None):
         self.policy, self.name, self.show_map, self.top = policy, policy.name, show_map, top
+        self.camera, self.frames = camera, frames
 
     def reset(self, world, target):
         self.policy.reset(world, target)
         self.c, self.lidar = world.client, Lidar(world, seed=99)
         self.next_draw, self.last_trail, self.drawn_path = 0.0, None, None
         self.dots, self.map_dots, self.route = -1, -1, []
+        self.view = CameraWindow(world, target, self.frames) if self.camera else None
         if self.top:
             self.c.resetDebugVisualizerCamera(6.5, 0.0, -89.0, [0.0, 0.0, 0.0])
 
@@ -79,6 +126,8 @@ class Overlay:
             self.last_trail = xy
         if obs["t"] >= self.next_draw:
             self._draw(obs)
+            if self.view:
+                self.view.update(obs["base_pos"][:2], float(obs["base_bearing"]), obs["t"])
             self.next_draw = obs["t"] + DRAW_EVERY_S
         return out
 
@@ -92,6 +141,8 @@ def main():
     ap.add_argument("--scenes", default=os.path.join(ROOT, "benchmark", "scenes.json"))
     ap.add_argument("--top", action="store_true", help="view from above")
     ap.add_argument("--show-map", action="store_true", help="also draw the robot's occupancy map (slower)")
+    ap.add_argument("--camera", action="store_true", help="show the depth camera's view in a second window")
+    ap.add_argument("--camera-frames", default=None, help="save the camera's view as pictures here, instead of a window")
     a = ap.parse_args()
 
     with open(a.scenes) as fh:
@@ -102,7 +153,7 @@ def main():
     scene = match[0]
 
     print(f"tier {a.tier} #{a.index}: target {scene['target']} start {scene['start_pose']}")
-    m, _ = rollout(Overlay(make_policy(a.policy), a.show_map, a.top), scene, max_time=a.max_time, use_gui=True)
+    m, _ = rollout(Overlay(make_policy(a.policy), a.show_map, a.top, a.camera or bool(a.camera_frames), a.camera_frames), scene, max_time=a.max_time, use_gui=True)
     print(f"\noutcome: {m['outcome']} | final {m['final_err_cm']:.1f} cm | "
           f"closest {m['min_err_cm']:.1f} cm | time {m['time_s']:.1f} s")
 

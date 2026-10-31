@@ -50,3 +50,36 @@ class WheelsOnly:
         v, w = WHEEL_RADIUS * (right + left) / 2, WHEEL_RADIUS * (right - left) / TRACK_WIDTH
         self.s += np.array([v * np.cos(self.s[2]) * dt, v * np.sin(self.s[2]) * dt, w * dt])
         return self.s.copy()
+
+
+ROTATION_CENTRE_M = 0.14     # measured: the base turns about a point this far ahead of its reference point (nav.py)
+SLIP_DECAY_S = 1.0           # sideways speed from the accelerometer is forgotten over this long, so its bias cannot run away
+
+
+class CentreOdometry(Odometry):
+    """Odometry that tracks the rotation centre: the wheels' forward speed applies there, and the reference point swings around it
+    during a turn. Optional accelerometer: adds the sideways slide that encoders cannot see."""
+
+    def __init__(self, x=0.0, y=0.0, yaw=0.0, use_accel=False):
+        super().__init__(x + ROTATION_CENTRE_M * np.cos(yaw), y + ROTATION_CENTRE_M * np.sin(yaw), yaw)
+        self.use_accel, self.slip, self.a_bias, self.n_still = use_accel, 0.0, np.zeros(2), 0
+
+    def update(self, wheels, gyro, dt, accel=None):
+        still = np.all(np.abs(wheels) < STILL_WHEELS)
+        before = self.s[:2].copy()
+        super().update(wheels, gyro, dt)
+        if self.use_accel and accel is not None:
+            if still:                                     # standing still: what it reads is its bias
+                self.n_still += 1
+                self.a_bias += (accel - self.a_bias) / min(self.n_still, 200)
+                self.slip = 0.0
+            else:
+                w, v = gyro - self.s[3], WHEEL_RADIUS * (wheels[0] + wheels[1] + wheels[2] + wheels[3]) / 4
+                self.slip += ((accel[1] - self.a_bias[1]) - w * v - self.slip / SLIP_DECAY_S) * dt
+                yaw = self.s[2]
+                self.s[:2] += self.slip * dt * np.array([-np.sin(yaw), np.cos(yaw)])
+        return self.base()
+
+    def base(self):
+        x, y, yaw = self.s[:3]
+        return np.array([x - ROTATION_CENTRE_M * np.cos(yaw), y - ROTATION_CENTRE_M * np.sin(yaw), yaw])

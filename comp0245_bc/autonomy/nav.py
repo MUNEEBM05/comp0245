@@ -149,10 +149,10 @@ class PlannerPolicy:
             _, torque = self._expert_arm(obs)
         return wheels, torque
 
-    def _expert_arm(self, obs):
+    def _expert_arm(self, obs, hold_arm=False):
         from rollout import ARM, arm_controller
         e, w = self.expert, self.w
         torque, e.q_des, _ = arm_controller(
             w.dyn_model, obs["q_pin"], obs["q_mes"][ARM], obs["qd_mes"][ARM], e.q_des, e.q_hold, e.target, obs["ee_pos"],
-            w.ee_frame_id, w.shoulder_frame_id, w.arm_lower, w.arm_upper, w.dt, e.arm_params, reach_active=e.state.done)
+            w.ee_frame_id, w.shoulder_frame_id, w.arm_lower, w.arm_upper, w.dt, e.arm_params, reach_active=e.state.done and not hold_arm)
         return None, torque

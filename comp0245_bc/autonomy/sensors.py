@@ -53,3 +53,22 @@ class Gyro:
     def read(self, dt):
         self.bias += float(self.rng.normal(0, self.bias_walk * np.sqrt(dt)))
         return float(self.client.getBaseVelocity(self.rid)[1][2]) + self.bias + float(self.rng.normal(0, self.noise))
+
+
+class Accelerometer:
+    """Sideways and forward acceleration of the base, in its own frame, from the change in true velocity + noise + bias. Level floor,
+    so gravity does not enter these two axes."""
+
+    def __init__(self, world, seed=0, noise=0.02, bias=0.01):
+        self.client, self.rid, self.noise = world.client, world.rid, noise
+        self.rng = np.random.default_rng([seed, 10])
+        self.bias, self.last = self.rng.normal(0, bias, 2), None
+
+    def read(self, dt):
+        v = np.array(self.client.getBaseVelocity(self.rid)[0][:2])
+        a = np.zeros(2) if self.last is None else (v - self.last) / dt
+        self.last = v
+        _, q = self.client.getBasePositionAndOrientation(self.rid)
+        yaw = self.client.getEulerFromQuaternion(q)[2]
+        c, s = np.cos(yaw), np.sin(yaw)
+        return np.array([c * a[0] + s * a[1], -s * a[0] + c * a[1]]) + self.bias + self.rng.normal(0, self.noise, 2)

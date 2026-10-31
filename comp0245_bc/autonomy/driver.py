@@ -4,6 +4,7 @@ Version B needs no waypoint, so the only classical parts it relies on when drivi
 
     make_policy("driver:trained/driver_A.npz")                       learned wheels + expert arm
     make_policy("driver:trained/driver_A.npz:trained/vR_ik.npz")     learned wheels + model R's arm
+    make_policy("driverbrake:trained/driver_A.npz")                  as first, and the wheels stop once the parked check says parked
 """
 import json
 import os
@@ -16,8 +17,9 @@ from nav import PlannerPolicy
 
 
 class DriverPolicy(PlannerPolicy):
-    def __init__(self, driver_path, arm_model=None):
+    def __init__(self, driver_path, arm_model=None, brake=False):
         super().__init__(arm_model)
+        self.brake = brake
         z = np.load(driver_path)
         self.net = ([z[f"W{i}"] for i in range(int(z["n_layers"]))], [z[f"b{i}"] for i in range(int(z["n_layers"]))])
         self.x_mean, self.x_std, self.y_mean, self.y_std = z["x_mean"], z["x_std"], z["y_mean"], z["y_std"]
@@ -52,4 +54,6 @@ class DriverPolicy(PlannerPolicy):
             if j < len(Ws) - 1:
                 h = np.maximum(h, 0.0)
         self.k += 1
+        if self.brake and self.expert.state.done:
+            return np.zeros(4), torque
         return (h * self.y_std + self.y_mean)[0], torque

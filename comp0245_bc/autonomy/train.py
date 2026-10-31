@@ -113,9 +113,10 @@ def train_mlp(xtr, ytr, xva, yva, a, wtr=None):
     import torch
     from torch import nn
     torch.manual_seed(a.seed)
-    xtr_t, ytr_t = torch.from_numpy(xtr), torch.from_numpy(ytr)
-    wtr_t = torch.from_numpy(np.ones(len(xtr), np.float32) if wtr is None else wtr.astype(np.float32))
-    xva_t, yva_t = torch.from_numpy(xva), torch.from_numpy(yva)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    xtr_t, ytr_t = torch.from_numpy(xtr).to(device), torch.from_numpy(ytr).to(device)
+    wtr_t = torch.from_numpy(np.ones(len(xtr), np.float32) if wtr is None else wtr.astype(np.float32)).to(device)
+    xva_t, yva_t = torch.from_numpy(xva).to(device), torch.from_numpy(yva).to(device)
 
     # Fully connected network: inputs -> hidden (ReLU) x N -> outputs, no activation on the output
     # because torques and wheel speeds are unbounded real numbers.
@@ -124,7 +125,7 @@ def train_mlp(xtr, ytr, xva, yva, a, wtr=None):
         layers += [nn.Linear(d, h), nn.ReLU()]
         d = h
     layers.append(nn.Linear(d, ytr.shape[1]))
-    net = nn.Sequential(*layers)
+    net = nn.Sequential(*layers).to(device)
     opt = torch.optim.Adam(net.parameters(), lr=a.lr)
     loss_fn = nn.MSELoss()  # MSE: punishes large torque errors most (those make the arm overshoot)
 
@@ -133,7 +134,7 @@ def train_mlp(xtr, ytr, xva, yva, a, wtr=None):
     best, best_state, bad, history = np.inf, None, 0, []
     for epoch in range(1, a.epochs + 1):
         net.train()
-        perm = torch.randperm(len(xtr_t))
+        perm = torch.randperm(len(xtr_t), device=device)
         total = 0.0
         for i in range(0, len(xtr_t), a.batch):
             idx = perm[i:i + a.batch]
@@ -159,8 +160,8 @@ def train_mlp(xtr, ytr, xva, yva, a, wtr=None):
     net.load_state_dict(best_state)
     # Export the weights as plain NumPy arrays: driving the robot then needs no PyTorch at all
     lin = [m for m in net if isinstance(m, nn.Linear)]
-    Ws = [m.weight.detach().numpy().T.astype(np.float32) for m in lin]
-    bs = [m.bias.detach().numpy().astype(np.float32) for m in lin]
+    Ws = [m.weight.detach().cpu().numpy().T.astype(np.float32) for m in lin]
+    bs = [m.bias.detach().cpu().numpy().astype(np.float32) for m in lin]
     return Ws, bs, history
 
 

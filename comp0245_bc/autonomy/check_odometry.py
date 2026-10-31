@@ -10,10 +10,10 @@ from multiprocessing import Pool
 
 import numpy as np
 
-from localisation import Odometry, WheelsOnly
+from localisation import CentreOdometry, Odometry, WheelsOnly
 from quiet import run_main
 from robotnik_arm_control import wrap_angle
-from sensors import Gyro, WheelEncoders
+from sensors import Accelerometer, Gyro, WheelEncoders
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 START_STILL_S = 2.0
@@ -25,7 +25,7 @@ class Probe:
 
     def reset(self, world, target):
         self.policy.reset(world, target)
-        self.enc, self.gyro = WheelEncoders(seed=int(self.seed)), Gyro(world, seed=int(self.seed))
+        self.enc, self.gyro, self.acc = WheelEncoders(seed=int(self.seed)), Gyro(world, seed=int(self.seed)), Accelerometer(world, seed=int(self.seed))
         self.dt, self.k, self.odo, self.wheels, self.at_park = 0.01, 0, None, None, None
         self.every = max(1, int(round(0.01 / world.dt)))
         self.wrong_v = 0.0
@@ -36,11 +36,15 @@ class Probe:
             xy, yaw = obs["base_pos"][:2], float(obs["base_bearing"])
             if self.odo is None:
                 self.odo, self.wheels = Odometry(xy[0], xy[1], yaw), WheelsOnly(xy[0], xy[1], yaw)
+                self.centre, self.accel = CentreOdometry(xy[0], xy[1], yaw), CentreOdometry(xy[0], xy[1], yaw, use_accel=True)
             wheels = self.enc.read(obs["qd_mes"])
-            est, est_w = self.odo.update(wheels, self.gyro.read(self.dt), self.dt), self.wheels.update(wheels, self.dt)
+            g, acc = self.gyro.read(self.dt), self.acc.read(self.dt)
+            est, est_w = self.odo.update(wheels, g, self.dt), self.wheels.update(wheels, self.dt)
+            est_c, est_a = self.centre.update(wheels, g, self.dt), self.accel.update(wheels, g, self.dt, acc)
             if self.at_park is None and self.policy.expert.state.done:
                 self.at_park = (float(np.linalg.norm(est[:2] - xy)), abs(float(wrap_angle(est[2] - yaw))),
-                                float(np.linalg.norm(est_w[:2] - xy)), abs(float(wrap_angle(est_w[2] - yaw))), obs["t"])
+                                float(np.linalg.norm(est_w[:2] - xy)), abs(float(wrap_angle(est_w[2] - yaw))), obs["t"],
+                                float(np.linalg.norm(est_c[:2] - xy)), float(np.linalg.norm(est_a[:2] - xy)))
         self.k += 1
         return out
 
@@ -70,6 +74,9 @@ def main():
         print(f"  {name:10s} path {np.mean([r[3] for r in R]):4.1f} m | encoders + gyro: {100 * np.median([r[4][0] for r in R]):5.1f} cm, "
               f"{np.degrees(np.median([r[4][1] for r in R])):4.1f} deg | wheels only: {100 * np.median([r[4][2] for r in R]):5.1f} cm, "
               f"{np.degrees(np.median([r[4][3] for r in R])):4.1f} deg")
+    for label, i in (("rotation-centre", 5), ("rotation-centre + accelerometer", 6)):
+        v = np.array([r[4][i] for r in done]) * 100
+        print(f"  {label}: median {np.median(v):.1f} cm, worst {v.max():.1f} cm")
     e = np.array([r[4][0] for r in done]) * 100
     print(f"  all: encoders + gyro position error median {np.median(e):.1f} cm, worst {e.max():.1f} cm, {100 * np.median(e / (np.array([r[3] for r in done]) * 100)):.1f}% of distance driven")
 

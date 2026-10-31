@@ -1,0 +1,203 @@
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[  1/200] seed 206001: reached
+[  2/200] seed 206002: reached
+[  3/200] seed 206000: reached
+[  4/200] seed 206003: reached
+[  5/200] seed 206006: reached
+[  6/200] seed 206007: reached
+[  7/200] seed 206004: reached
+[  8/200] seed 206005: reached
+[  9/200] seed 206010: reached
+[ 10/200] seed 206008: reached
+[ 11/200] seed 206009: reached
+[ 12/200] seed 206011: reached
+[ 13/200] seed 206012: reached
+[ 14/200] seed 206014: reached
+[ 15/200] seed 206013: reached
+[ 16/200] seed 206015: reached
+[ 17/200] seed 206018: reached
+[ 18/200] seed 206017: reached
+[ 19/200] seed 206019: reached
+[ 20/200] seed 206020: reached
+[ 21/200] seed 206021: crashed_base
+[ 22/200] seed 206022: reached
+[ 23/200] seed 206024: reached
+[ 24/200] seed 206023: reached
+[ 25/200] seed 206026: reached
+[ 26/200] seed 206028: reached
+[ 27/200] seed 206027: reached
+[ 28/200] seed 206029: reached
+[ 29/200] seed 206030: reached
+[ 30/200] seed 206031: reached
+[ 31/200] seed 206032: reached
+[ 32/200] seed 206035: reached
+[ 33/200] seed 206034: reached
+[ 34/200] seed 206037: reached
+[ 35/200] seed 206038: reached
+[ 36/200] seed 206040: reached
+[ 37/200] seed 206039: reached
+[ 38/200] seed 206044: reached
+[ 39/200] seed 206042: reached
+[ 40/200] seed 206045: reached
+[ 41/200] seed 216001: reached
+[ 42/200] seed 216004: reached
+[ 43/200] seed 216002: reached
+[ 44/200] seed 216003: reached
+[ 45/200] seed 216006: reached
+[ 46/200] seed 216005: reached
+[ 47/200] seed 216009: reached
+[ 48/200] seed 216011: reached
+[ 49/200] seed 216012: reached
+[ 50/200] seed 216016: reached
+[ 51/200] seed 216017: reached
+[ 52/200] seed 216018: reached
+[ 53/200] seed 216019: reached
+[ 54/200] seed 216020: reached
+[ 55/200] seed 216021: reached
+[ 56/200] seed 216022: crashed_base
+[ 57/200] seed 216024: reached
+[ 58/200] seed 216023: reached
+[ 59/200] seed 216025: reached
+[ 60/200] seed 216026: reached
+[ 61/200] seed 216027: reached
+[ 62/200] seed 216031: reached
+[ 63/200] seed 216032: reached
+[ 64/200] seed 216034: reached
+[ 65/200] seed 216035: reached
+[ 66/200] seed 216037: reached
+[ 67/200] seed 216038: reached
+[ 68/200] seed 216039: reached
+[ 69/200] seed 216040: reached
+[ 70/200] seed 216043: reached
+[ 71/200] seed 216041: reached
+[ 72/200] seed 216044: reached
+[ 73/200] seed 216045: reached
+[ 74/200] seed 216046: reached
+[ 75/200] seed 216047: reached
+[ 76/200] seed 216048: reached
+[ 77/200] seed 216050: reached
+[ 78/200] seed 216051: reached
+[ 79/200] seed 216052: reached
+[ 80/200] seed 226003: reached
+[ 81/200] seed 226008: reached
+[ 82/200] seed 226006: reached
+[ 83/200] seed 216049: timeout
+[ 84/200] seed 226009: reached
+[ 85/200] seed 226010: reached
+[ 86/200] seed 226013: reached
+[ 87/200] seed 226014: reached
+[ 88/200] seed 226016: reached
+[ 89/200] seed 226018: reached
+[ 90/200] seed 226017: reached
+[ 91/200] seed 226019: reached
+[ 92/200] seed 226021: reached
+[ 93/200] seed 226022: reached
+[ 94/200] seed 226024: reached
+[ 95/200] seed 226026: reached
+[ 96/200] seed 226027: reached
+[ 97/200] seed 226030: reached
+[ 98/200] seed 226033: reached
+[ 99/200] seed 226036: reached
+[100/200] seed 226035: reached
+[101/200] seed 226037: reached
+[102/200] seed 226039: reached
+[103/200] seed 226040: reached
+[104/200] seed 226042: reached
+[105/200] seed 226043: reached
+[106/200] seed 226047: reached
+[107/200] seed 226052: reached
+[108/200] seed 226053: reached
+[109/200] seed 226055: reached
+[110/200] seed 226054: reached
+[111/200] seed 226058: reached
+[112/200] seed 226060: reached
+[113/200] seed 226064: reached
+[114/200] seed 226063: reached
+[115/200] seed 226066: reached
+[116/200] seed 226067: reached
+[117/200] seed 226068: reached
+[118/200] seed 226071: reached
+[119/200] seed 226073: reached
+[120/200] seed 236000: reached
+[121/200] seed 226072: reached
+[122/200] seed 236001: reached
+[123/200] seed 236002: reached
+[124/200] seed 236003: reached
+[125/200] seed 236004: reached
+[126/200] seed 236007: reached
+[127/200] seed 236014: reached
+[128/200] seed 236015: reached
+[129/200] seed 236017: reached
+[130/200] seed 236016: reached
+[131/200] seed 236018: crashed_base
+[132/200] seed 236019: reached
+[133/200] seed 236022: reached
+[134/200] seed 236023: reached
+[135/200] seed 236024: reached
+[136/200] seed 236025: reached
+[137/200] seed 236026: reached
+[138/200] seed 236028: reached
+[139/200] seed 236030: reached
+[140/200] seed 236031: reached
+[141/200] seed 236035: reached
+[142/200] seed 236036: reached
+[143/200] seed 236038: reached
+[144/200] seed 236037: reached
+[145/200] seed 236040: reached
+[146/200] seed 236041: reached
+[147/200] seed 236043: crashed_base
+[148/200] seed 236042: reached
+[149/200] seed 236044: reached
+[150/200] seed 236045: reached
+[151/200] seed 236047: reached
+[152/200] seed 236046: reached
+[153/200] seed 236048: reached
+[154/200] seed 236050: reached
+[155/200] seed 236052: reached
+[156/200] seed 236054: reached
+[157/200] seed 236056: reached
+[158/200] seed 236057: reached
+[159/200] seed 236058: reached
+[160/200] seed 236059: reached
+[161/200] seed 246004: reached
+[162/200] seed 246018: reached
+[163/200] seed 246025: reached
+[164/200] seed 246027: reached
+[165/200] seed 246039: reached
+[166/200] seed 246041: reached
+[167/200] seed 246061: reached
+[168/200] seed 246045: reached
+[169/200] seed 246070: reached
+[170/200] seed 246072: reached
+[171/200] seed 246079: reached
+[172/200] seed 246087: reached
+[173/200] seed 246090: reached
+[174/200] seed 246106: reached
+[175/200] seed 246109: reached
+[176/200] seed 246117: reached
+[177/200] seed 246123: reached
+[178/200] seed 246144: reached
+[179/200] seed 246162: reached
+[180/200] seed 246173: reached
+[181/200] seed 246213: reached
+[182/200] seed 246217: reached
+[183/200] seed 246225: crashed_base
+[184/200] seed 246228: reached
+[185/200] seed 246227: reached
+[186/200] seed 246230: reached
+[187/200] seed 246231: reached
+[188/200] seed 246246: crashed_base
+[189/200] seed 246249: reached
+[190/200] seed 246268: reached
+[191/200] seed 246266: reached
+[192/200] seed 246275: reached
+[193/200] seed 246286: reached
+[194/200] seed 246296: reached
+[195/200] seed 246311: reached
+[196/200] seed 246313: reached
+[197/200] seed 246323: reached
+[198/200] seed 246326: reached
+[199/200] seed 246341: reached
+[200/200] seed 246327: reached
+done: {"reached": 193, "crashed_base": 6, "timeout": 1}
