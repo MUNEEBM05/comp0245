@@ -753,6 +753,10 @@ def make_policy(spec):  # noqa: F811  (extends the versions above with GRU model
     if spec.startswith("planner"):              # classical navigation (nav.py), arm from the expert or a model
         from nav import PlannerPolicy
         return PlannerPolicy(spec.split(":", 1)[1] if ":" in spec else None)
+    if spec.startswith("driver:"):              # learned wheels (driver.py), arm from the expert or a model
+        from driver import DriverPolicy
+        parts = spec.split(":")
+        return DriverPolicy(parts[1], parts[2] if len(parts) > 2 else None)
     if spec.endswith(".npz") and os.path.exists(spec):
         with np.load(spec) as z:
             kind = json.loads(str(z["meta"])).get("model") if "meta" in z.files else None

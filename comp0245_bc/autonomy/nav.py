@@ -108,6 +108,7 @@ class PlannerPolicy:
     def _sense_and_plan(self, xy, yaw, centre, t):
         if t >= self.next_scan:
             ranges, hit = self.lidar.scan(xy, yaw)
+            self.last_ranges = ranges
             self.map.add_scan(xy, yaw, self.lidar.angles, ranges, hit)
             self.next_scan = t + SCAN_EVERY_S
         if t >= self.next_plan or self.path is None:

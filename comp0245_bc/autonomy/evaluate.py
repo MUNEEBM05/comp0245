@@ -103,7 +103,7 @@ def main():
     a = ap.parse_args()
 
     policy_file = a.policy.rsplit(":", 1)[0] if a.policy.endswith((":mlp_arm", ":mlp_wheels")) else a.policy
-    if a.policy not in ("expert", "markov_expert") and not a.policy.startswith("planner") and not os.path.exists(policy_file):
+    if a.policy not in ("expert", "markov_expert") and not a.policy.startswith(("planner", "driver:")) and not os.path.exists(policy_file):
         print(f"Policy file not found: {a.policy}")
         return
     if not os.path.exists(a.scenes):
@@ -114,6 +114,9 @@ def main():
     name = a.policy if a.policy in ("expert", "markov_expert") else os.path.splitext(os.path.basename(policy_file))[0]
     if a.policy.startswith("planner"):
         name = "planner_" + (os.path.splitext(os.path.basename(a.policy.split(":", 1)[1]))[0] if ":" in a.policy else "expert")
+    if a.policy.startswith("driver:"):
+        name = "_".join(os.path.splitext(os.path.basename(p))[0] for p in a.policy.split(":")[1:])
+        name += "" if a.policy.count(":") > 1 else "_expert"
     if policy_file.endswith(".pkl"):
         print("note: a random forest predicts far slower than an MLP; each drive takes longer")
     if policy_file != a.policy:
