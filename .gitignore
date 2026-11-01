@@ -6,3 +6,4 @@ RoboEnv/
 data.zip
 comp0245_bc/autonomy/results/report.html
 comp0245_bc/autonomy/report_template.html
+comp0245_bc/autonomy/build_report.py

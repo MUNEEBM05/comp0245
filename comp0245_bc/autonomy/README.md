@@ -1,7 +1,7 @@
 # Autonomy: obstacles, lidar, learned driving, camera
 
 Open-ended work beyond the main task: the robot plans around obstacles and can reach the target without being given its
-own position. Imitation learning only, no reinforcement learning. Full results: `results/all_results.json`, `figures/`. `build_report.py` builds a report page from `report_template.html`; the template and the page are not in git, so it only runs where the template exists.
+own position. Imitation learning only, no reinforcement learning. Full results: `results/all_results.json`, `figures/`.
 
 Shared with the rest of the project, not copied: `../data ../splits ../benchmark ../configs ../models ../RoboEnv`.
 
@@ -53,7 +53,7 @@ horizontal). On the other 125 scenes it reached 118 and held 115. The obstacle s
 | `self_nav.py`, `eval_selfnav.py` | No true position: modes `odo`, `cam`, `search`; test |
 | `evaluate.py`, `rollout.py` | Tests with true position |
 | `watch.py` | Viewer; `--camera` shows the camera image |
-| `make_figures.py`, `build_report.py` | Figures, results file and report page |
+| `make_figures.py` | Figures and results file |
 
 ## Reproduce
 
