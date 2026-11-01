@@ -4,12 +4,14 @@
     python watch.py --policy planner --scenes scenes/obstacles_val.json --tier 14 --index 0 --max-time 90
     python watch.py --policy planner:trained/vR_ik.npz --scenes scenes/obstacles_val.json --tier 12 --index 3 --max-time 90 --top
     python watch.py --policy trained/vR_ik.npz --tier 1 --index 40          # a model on a benchmark scene
+    python watch.py --policy driverbrake:trained/driver_A_s1.npz:trained/vR_ik.npz --self-nav cam --camera --scenes scenes/obstacles_val.json --tier 14 --index 0 --max-time 110 --hold 5
 
 Drawn:  red dots    lidar hits
         blue line   the planned route (planner policies only)
         green line  the path the robot has actually driven
         grey dots   cells on the robot's map that count as occupied (planner policies only, with --show-map)
 
+--self-nav runs the policy without true position (self_nav.py). The blue route is then drawn where the robot believes it is, the green line is where it truly went.
 --camera opens a second window: the depth camera's picture, a box around what it detects as the target, and its error.
 --camera-frames DIR also saves those views as pictures.
 
@@ -88,6 +90,7 @@ class Overlay:
         self.next_draw, self.last_trail, self.drawn_path = 0.0, None, None
         self.dots, self.map_dots, self.route = -1, -1, []
         self.view = CameraWindow(world, target, self.frames) if self.camera else None
+        self.c.configureDebugVisualizer(self.c.COV_ENABLE_MOUSE_PICKING, 0)    # dragging would push the robot
         if self.top:
             self.c.resetDebugVisualizerCamera(6.5, 0.0, -89.0, [0.0, 0.0, 0.0])
 
@@ -103,15 +106,16 @@ class Overlay:
             pts = np.column_stack([xy[0] + ranges[hit] * np.cos(a), xy[1] + ranges[hit] * np.sin(a),
                                    np.full(hit.sum(), LIDAR_HEIGHT_M)])
             self.dots = self._points(pts, RED, 4, self.dots)
-        path = getattr(self.policy, "path", None)
+        inner = getattr(self.policy, "inner", self.policy)
+        path = getattr(inner, "path", None)
         if path is not None and path is not self.drawn_path:
             for item in self.route:
                 self.c.removeUserDebugItem(item)
             self.route = [self.c.addUserDebugLine([a[0], a[1], 0.03], [b[0], b[1], 0.03], BLUE, lineWidth=3)
                           for a, b in zip(path[:-1], path[1:])]
             self.drawn_path = path
-        if self.show_map and hasattr(self.policy, "map") and self.policy.map.grid.occ.any():
-            g = self.policy.map.grid
+        if self.show_map and hasattr(inner, "map") and inner.map.grid.occ.any():
+            g = inner.map.grid
             cells = np.argwhere(g.occ)
             pts = np.column_stack([g.origin + (cells + 0.5) * g.res, np.full(len(cells), 0.05)])
             self.map_dots = self._points(pts, GREY, 3, self.map_dots)
@@ -143,6 +147,8 @@ def main():
     ap.add_argument("--show-map", action="store_true", help="also draw the robot's occupancy map (slower)")
     ap.add_argument("--camera", action="store_true", help="show the depth camera's view in a second window")
     ap.add_argument("--camera-frames", default=None, help="save the camera's view as pictures here, instead of a window")
+    ap.add_argument("--self-nav", choices=["odo", "cam", "search"], default=None, help="no true position: wrap the policy in self_nav.py")
+    ap.add_argument("--hold", type=float, default=0.0, help="must stay within 1 cm this long, s")
     a = ap.parse_args()
 
     with open(a.scenes) as fh:
@@ -153,7 +159,11 @@ def main():
     scene = match[0]
 
     print(f"tier {a.tier} #{a.index}: target {scene['target']} start {scene['start_pose']}")
-    m, _ = rollout(Overlay(make_policy(a.policy), a.show_map, a.top, a.camera or bool(a.camera_frames), a.camera_frames), scene, max_time=a.max_time, use_gui=True)
+    policy = make_policy(a.policy)
+    if a.self_nav:
+        from self_nav import SelfNavPolicy
+        policy = SelfNavPolicy(policy, a.self_nav, seed=scene["seed"] % 100_000)
+    m, _ = rollout(Overlay(policy, a.show_map, a.top, a.camera or bool(a.camera_frames), a.camera_frames), scene, max_time=a.max_time, use_gui=True, hold_s=a.hold)
     print(f"\noutcome: {m['outcome']} | final {m['final_err_cm']:.1f} cm | "
           f"closest {m['min_err_cm']:.1f} cm | time {m['time_s']:.1f} s")
 
