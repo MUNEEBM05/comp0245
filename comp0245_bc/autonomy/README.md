@@ -1,7 +1,7 @@
 # Autonomy: obstacles, lidar, learned driving, camera
 
 Open-ended work beyond the main task: the robot plans around obstacles and can reach the target without being given its
-own position. Imitation learning only, no reinforcement learning. Full results: `results/report.html`, `results/all_results.json`, `figures/`.
+own position. Imitation learning only, no reinforcement learning. Full results: `results/all_results.json`, `figures/`. `python build_report.py` builds a report page at `results/report.html` (not in git).
 
 Shared with the rest of the project, not copied: `../data ../splits ../benchmark ../configs ../models ../RoboEnv`.
 

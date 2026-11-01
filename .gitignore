@@ -4,3 +4,4 @@ __pycache__/
 *.log
 RoboEnv/
 data.zip
+comp0245_bc/autonomy/results/report.html
