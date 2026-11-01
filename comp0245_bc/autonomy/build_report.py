@@ -84,7 +84,7 @@ def tiers():
 
 T_ROWS, T_DONE, T_ALL = tiers()
 if T_DONE == T_ALL:
-    T_NOTE = "All setups on the team's benchmark, no obstacles, 50 scenes per tier, same 90 s limit (camera 110 s)."
+    T_NOTE = "All setups on the team's benchmark, no obstacles, 50 scenes per tier, 90 s limit (camera 110 s). Tier 1 is like training, tier 2 has higher or farther targets, tier 3 has unusual starts."
 else:
     T_NOTE = f"<strong>Still running:</strong> {T_DONE} of {T_ALL} setups have finished. This page will be updated when the rest are in."
 ROUTES = '<figure class="fig"><img src="figures/routes.png" alt="Top-down routes in the five scene types for the planner, learned driver A and camera mode"></figure><p class="cap">One validation scene of each type, for illustration. The camera route is the true path, which the robot itself does not know.</p>' if os.path.exists(os.path.join(HERE, "figures", "routes.png")) else ""

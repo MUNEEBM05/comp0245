@@ -26,6 +26,20 @@ Environments: `../RoboEnv/.pixi/envs/default/bin/python` for the simulator, `../
 
 Driver A still uses the planner's route and parked check. Camera setups except search are told the target once at the start.
 
+## Results: team benchmark tiers 1-3, no obstacles, 150 drives
+
+| Setup | Reached | Held |
+|---|---|---|
+| Original expert | 149 | 149 |
+| R alone | 145 | 131 |
+| Planner + expert arm | 148 | 148 |
+| Planner + R | 142 | 128 |
+| Driver A + expert arm, brake (seeds 0, 1) | 144, 148 | 142, 148 |
+| Camera + planner + expert arm | 118 | 115 |
+
+The camera setup fails all 25 tier 2 scenes with targets at 1.10 m or higher, because they are above its view once parked (top of view 5 degrees above
+horizontal). On the other 125 scenes it reached 118 and held 115. The obstacle scenes have no target above 0.99 m, so they do not test this.
+
 ## Main files
 
 | File | What it does |
@@ -55,4 +69,4 @@ Test scenes are for final scores only; develop on `scenes/obstacles_val.json`.
 ## Limits
 
 Static obstacles 1.6 m tall, one-plane lidar, our own sensor noise values, the target is the only red object, single training seeds differ a lot, and the
-brake idea came after seeing crashes on the test scenes (confirmed on validation before use).
+brake idea came after seeing crashes on the test scenes (confirmed on validation before use). Camera mode cannot see targets at 1.10 m or higher once parked.

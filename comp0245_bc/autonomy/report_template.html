@@ -114,6 +114,8 @@ td.h{text-align:center;background:rgba(var(--heat),var(--a));padding:6px 8px}td.
 <section><h2>Team benchmark, tiers 1–3</h2>
 <p class="cap">{{TIER_NOTE}} Cells show reached/held, out of 50 per tier.</p>
 <div class="wrap"><table><thead><tr><th style="text-align:left" scope="col">Setup</th><th scope="col">Total, of 150</th><th scope="col">%</th><th scope="col">Tier 1</th><th scope="col">Tier 2</th><th scope="col">Tier 3</th></tr></thead><tbody>{{TIERS}}</tbody></table></div>
+<p>With no obstacles, the planner and driver A do about as well as the original expert, so the obstacle work has not cost clear-floor performance. R alone falls short on holding in tier 2, with 11 drives reaching the target but not holding it.</p>
+<p><strong>The camera cannot see high targets once parked.</strong> All 25 tier 2 scenes with targets 1.10 m or higher failed: the camera saw the target at parking in 0 of 25, and none reached it. On the other 125 scenes the same setup reached 118 and held 115 (92%). The camera sits at 1.0 m, tilted down 30&deg;, with a 70&deg; vertical view, so the top of its view is only 5&deg; above horizontal. A target at 1.10 m would have to be about 1.14 m away to be in view, but the robot parks about 0.65 m or closer. The obstacle scenes have no target above 0.99 m, so the 88% result above never tests this.</p>
 </section>
 
 <section><h2>All results</h2>
@@ -126,6 +128,7 @@ td.h{text-align:center;background:rgba(var(--heat),var(--a));padding:6px 8px}td.
 <li><strong>Nothing is fully independent yet.</strong> Every driver A result uses the planner's route and parked check. The camera setups are told the target once at the start, except search.</li>
 <li><strong>The brake was not a clean test.</strong> The idea came from looking at crashes on the frozen test scenes, although it was confirmed on validation first. Its test gains are slightly optimistic.</li>
 <li><strong>Simulated sensing is generous.</strong> We chose the noise values. The red target is the only red object, so a colour threshold works. The camera image is rendered in simulation, with no real-world lens or lighting effects, and the lidar mast is not modelled.</li>
+<li><strong>Camera mount.</strong> Targets at 1.10 m or higher are out of view once parked, so all camera results apply only to lower targets. See the tier section.</li>
 <li><strong>Scenes are limited.</strong> Obstacles are static, 1.6 m tall and visible to a single lidar plane. There are no pushes during the drive.</li>
 <li><strong>The start pose defines the map.</strong> The robot's frame begins at its start position, and odometry drifts about 5.6% of the distance travelled.</li>
 <li><strong>Tests dropped on purpose.</strong> vS seed 1 and A + vS were not run on the test scenes, because vS was no better than R on validation (64 and 59 held against 66, of 75).</li>
@@ -145,6 +148,7 @@ td.h{text-align:center;background:rgba(var(--heat),var(--a));padding:6px 8px}td.
 
 <section><h2>Next</h2>
 <ul>
+<li>Tilt the camera less or add a second view so high targets stay in view, then retest camera mode.</li>
 <li>Find why learned setups time out in camera mode, on validation scenes only.</li>
 <li>Train an arm on recordings made in camera mode, so it sees the estimates it receives when driving. This also gives the arm a direct use of sensor data.</li>
 <li>Teach or add exploration, so search can handle targets hidden at the start.</li>
