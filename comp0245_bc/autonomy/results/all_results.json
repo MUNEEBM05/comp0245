@@ -1,0 +1,952 @@
+[
+ {
+  "label": "Original expert",
+  "group": "Before",
+  "n": 150,
+  "reached": 38,
+  "held": 38,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 8,
+    "held": 8
+   },
+   "gap": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   }
+  },
+  "timeouts": 0,
+  "arm_crashes": 0,
+  "obstacle_hits": 112,
+  "not_held": 0
+ },
+ {
+  "label": "R alone",
+  "group": "Before",
+  "n": 150,
+  "reached": 38,
+  "held": 38,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 8,
+    "held": 8
+   },
+   "gap": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   }
+  },
+  "timeouts": 0,
+  "arm_crashes": 0,
+  "obstacle_hits": 112,
+  "not_held": 0
+ },
+ {
+  "label": "Planner + expert arm",
+  "group": "True position",
+  "n": 150,
+  "reached": 149,
+  "held": 149,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   },
+   "gap": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   }
+  },
+  "timeouts": 0,
+  "arm_crashes": 1,
+  "obstacle_hits": 0,
+  "not_held": 0
+ },
+ {
+  "label": "A seed 0 + expert, brake",
+  "group": "True position",
+  "n": 150,
+  "reached": 145,
+  "held": 144,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 28,
+    "held": 27
+   },
+   "gap": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   }
+  },
+  "timeouts": 1,
+  "arm_crashes": 4,
+  "obstacle_hits": 0,
+  "not_held": 1
+ },
+ {
+  "label": "A seed 1 + expert, brake",
+  "group": "True position",
+  "n": 150,
+  "reached": 143,
+  "held": 141,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 29,
+    "held": 28
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 26,
+    "held": 25
+   },
+   "gap": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   }
+  },
+  "timeouts": 5,
+  "arm_crashes": 4,
+  "obstacle_hits": 0,
+  "not_held": 0
+ },
+ {
+  "label": "A seed 0 + expert",
+  "group": "True position",
+  "n": 150,
+  "reached": 140,
+  "held": 128,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 29,
+    "held": 26
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 24,
+    "held": 19
+   },
+   "gap": {
+    "n": 30,
+    "reached": 28,
+    "held": 27
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 30,
+    "held": 27
+   }
+  },
+  "timeouts": 3,
+  "arm_crashes": 15,
+  "obstacle_hits": 0,
+  "not_held": 4
+ },
+ {
+  "label": "A seed 1 + expert",
+  "group": "True position",
+  "n": 150,
+  "reached": 141,
+  "held": 140,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 28,
+    "held": 28
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 25,
+    "held": 25
+   },
+   "gap": {
+    "n": 30,
+    "reached": 29,
+    "held": 28
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   }
+  },
+  "timeouts": 5,
+  "arm_crashes": 4,
+  "obstacle_hits": 0,
+  "not_held": 1
+ },
+ {
+  "label": "Planner + R",
+  "group": "True position",
+  "n": 150,
+  "reached": 132,
+  "held": 129,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 26,
+    "held": 26
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 22,
+    "held": 22
+   },
+   "gap": {
+    "n": 30,
+    "reached": 28,
+    "held": 27
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 26,
+    "held": 24
+   }
+  },
+  "timeouts": 16,
+  "arm_crashes": 3,
+  "obstacle_hits": 0,
+  "not_held": 2
+ },
+ {
+  "label": "Planner + vS seed 0",
+  "group": "True position",
+  "n": 150,
+  "reached": 130,
+  "held": 127,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 24,
+    "held": 22
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 25,
+    "held": 24
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 24,
+    "held": 24
+   },
+   "gap": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 28,
+    "held": 28
+   }
+  },
+  "timeouts": 14,
+  "arm_crashes": 9,
+  "obstacle_hits": 0,
+  "not_held": 0
+ },
+ {
+  "label": "A seed 0 + R",
+  "group": "True position",
+  "n": 150,
+  "reached": 81,
+  "held": 70,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 28,
+    "held": 23
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 14,
+    "held": 13
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 10,
+    "held": 8
+   },
+   "gap": {
+    "n": 30,
+    "reached": 19,
+    "held": 17
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 10,
+    "held": 9
+   }
+  },
+  "timeouts": 56,
+  "arm_crashes": 16,
+  "obstacle_hits": 0,
+  "not_held": 8
+ },
+ {
+  "label": "A seed 1 + R",
+  "group": "True position",
+  "n": 150,
+  "reached": 134,
+  "held": 122,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 28,
+    "held": 26
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 22,
+    "held": 16
+   },
+   "gap": {
+    "n": 30,
+    "reached": 26,
+    "held": 25
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 28,
+    "held": 25
+   }
+  },
+  "timeouts": 16,
+  "arm_crashes": 0,
+  "obstacle_hits": 0,
+  "not_held": 12
+ },
+ {
+  "label": "A seed 0 + R, brake",
+  "group": "True position",
+  "n": 150,
+  "reached": 117,
+  "held": 114,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 25,
+    "held": 25
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 18,
+    "held": 15
+   },
+   "gap": {
+    "n": 30,
+    "reached": 24,
+    "held": 24
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 20,
+    "held": 20
+   }
+  },
+  "timeouts": 32,
+  "arm_crashes": 2,
+  "obstacle_hits": 0,
+  "not_held": 2
+ },
+ {
+  "label": "A seed 1 + R, brake",
+  "group": "True position",
+  "n": 150,
+  "reached": 118,
+  "held": 115,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 29,
+    "held": 29
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 26,
+    "held": 26
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 19,
+    "held": 17
+   },
+   "gap": {
+    "n": 30,
+    "reached": 24,
+    "held": 23
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 20,
+    "held": 20
+   }
+  },
+  "timeouts": 32,
+  "arm_crashes": 0,
+  "obstacle_hits": 0,
+  "not_held": 3
+ },
+ {
+  "label": "B seed 0 + expert",
+  "group": "True position",
+  "n": 150,
+  "reached": 5,
+  "held": 2,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 2,
+    "held": 0
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 1,
+    "held": 0
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "gap": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 2,
+    "held": 2
+   }
+  },
+  "timeouts": 60,
+  "arm_crashes": 10,
+  "obstacle_hits": 76,
+  "not_held": 2
+ },
+ {
+  "label": "B seed 1 + expert",
+  "group": "True position",
+  "n": 150,
+  "reached": 9,
+  "held": 8,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 2,
+    "held": 1
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "gap": {
+    "n": 30,
+    "reached": 3,
+    "held": 3
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 4,
+    "held": 4
+   }
+  },
+  "timeouts": 65,
+  "arm_crashes": 13,
+  "obstacle_hits": 63,
+  "not_held": 1
+ },
+ {
+  "label": "B seed 0 + R",
+  "group": "True position",
+  "n": 150,
+  "reached": 2,
+  "held": 2,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "gap": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 2,
+    "held": 2
+   }
+  },
+  "timeouts": 62,
+  "arm_crashes": 5,
+  "obstacle_hits": 81,
+  "not_held": 0
+ },
+ {
+  "label": "Camera + planner + expert",
+  "group": "No true position",
+  "n": 150,
+  "reached": 138,
+  "held": 132,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 29
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 29,
+    "held": 27
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 22,
+    "held": 21
+   },
+   "gap": {
+    "n": 30,
+    "reached": 30,
+    "held": 28
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 27,
+    "held": 27
+   }
+  },
+  "timeouts": 4,
+  "arm_crashes": 8,
+  "obstacle_hits": 2,
+  "not_held": 4
+ },
+ {
+  "label": "Camera + A seed 0 + expert",
+  "group": "No true position",
+  "n": 150,
+  "reached": 113,
+  "held": 110,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 29
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 23,
+    "held": 23
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 15,
+    "held": 13
+   },
+   "gap": {
+    "n": 30,
+    "reached": 23,
+    "held": 23
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 22,
+    "held": 22
+   }
+  },
+  "timeouts": 28,
+  "arm_crashes": 10,
+  "obstacle_hits": 0,
+  "not_held": 2
+ },
+ {
+  "label": "Camera + A seed 1 + expert",
+  "group": "No true position",
+  "n": 150,
+  "reached": 105,
+  "held": 99,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 29
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 24,
+    "held": 21
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 15,
+    "held": 14
+   },
+   "gap": {
+    "n": 30,
+    "reached": 18,
+    "held": 18
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 18,
+    "held": 17
+   }
+  },
+  "timeouts": 40,
+  "arm_crashes": 5,
+  "obstacle_hits": 0,
+  "not_held": 6
+ },
+ {
+  "label": "Camera + planner + R",
+  "group": "No true position",
+  "n": 150,
+  "reached": 108,
+  "held": 100,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 29
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 23,
+    "held": 22
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 14,
+    "held": 12
+   },
+   "gap": {
+    "n": 30,
+    "reached": 21,
+    "held": 19
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 20,
+    "held": 18
+   }
+  },
+  "timeouts": 40,
+  "arm_crashes": 5,
+  "obstacle_hits": 0,
+  "not_held": 5
+ },
+ {
+  "label": "Camera + planner + vS seed 0",
+  "group": "No true position",
+  "n": 150,
+  "reached": 108,
+  "held": 102,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 20,
+    "held": 18
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 18,
+    "held": 18
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 23,
+    "held": 22
+   },
+   "gap": {
+    "n": 30,
+    "reached": 24,
+    "held": 22
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 23,
+    "held": 22
+   }
+  },
+  "timeouts": 35,
+  "arm_crashes": 11,
+  "obstacle_hits": 0,
+  "not_held": 2
+ },
+ {
+  "label": "Camera + A seed 0 + R, brake",
+  "group": "No true position",
+  "n": 150,
+  "reached": 79,
+  "held": 74,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 28,
+    "held": 28
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 15,
+    "held": 15
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 10,
+    "held": 9
+   },
+   "gap": {
+    "n": 30,
+    "reached": 15,
+    "held": 11
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 11,
+    "held": 11
+   }
+  },
+  "timeouts": 61,
+  "arm_crashes": 11,
+  "obstacle_hits": 0,
+  "not_held": 4
+ },
+ {
+  "label": "Camera + A seed 1 + R, brake",
+  "group": "No true position",
+  "n": 150,
+  "reached": 104,
+  "held": 91,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 27,
+    "held": 26
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 24,
+    "held": 18
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 13,
+    "held": 11
+   },
+   "gap": {
+    "n": 30,
+    "reached": 20,
+    "held": 17
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 20,
+    "held": 19
+   }
+  },
+  "timeouts": 43,
+  "arm_crashes": 4,
+  "obstacle_hits": 0,
+  "not_held": 12
+ },
+ {
+  "label": "Search + planner + expert",
+  "group": "No true position",
+  "n": 150,
+  "reached": 57,
+  "held": 55,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 30,
+    "held": 30
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 14,
+    "held": 12
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 13,
+    "held": 13
+   },
+   "gap": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   }
+  },
+  "timeouts": 66,
+  "arm_crashes": 20,
+  "obstacle_hits": 8,
+  "not_held": 1
+ },
+ {
+  "label": "Odometry only + planner + expert",
+  "group": "No true position",
+  "n": 150,
+  "reached": 0,
+  "held": 0,
+  "scenes": {
+   "clear": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "sparse": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "cluttered": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "gap": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   },
+   "blocked": {
+    "n": 30,
+    "reached": 0,
+    "held": 0
+   }
+  },
+  "timeouts": 143,
+  "arm_crashes": 2,
+  "obstacle_hits": 5,
+  "not_held": 0
+ }
+]

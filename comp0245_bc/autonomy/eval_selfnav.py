@@ -28,7 +28,7 @@ def one(job):
     inner = PlannerPolicy(arm) if drive == "planner" else DriverPolicy(drive, arm, brake=brake)
     pol = SelfNavPolicy(inner, mode, seed=scene["seed"] % 100_000)
     m, _ = rollout(pol, scene, max_time=max_time, hold_s=5.0)
-    return {"scenario": scene["scenario"], "index": scene["index"], "outcome": m["outcome"], "first_reach_s": m.get("first_reach_s"),
+    return {"scenario": scene.get("scenario", f"tier{scene['tier']}"), "index": scene["index"], "outcome": m["outcome"], "first_reach_s": m.get("first_reach_s"),
             "final_err_cm": m.get("final_err_cm"), "min_err_cm": m.get("min_err_cm"), "time_s": m["time_s"], "path_m": m["base_path_m"], **pol.stats}
 
 
@@ -39,6 +39,7 @@ def main():
     ap.add_argument("--arm", default=None)
     ap.add_argument("--scenes", default=os.path.join(HERE, "scenes", "obstacles_val.json"))
     ap.add_argument("--n", type=int, default=30)
+    ap.add_argument("--tiers", type=int, nargs="+", default=None, help="only these tiers (for the team's benchmark)")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--max-time", type=float, default=110.0)
     ap.add_argument("--brake", action="store_true", help="learned drivers: stop the wheels once parked")
@@ -46,12 +47,12 @@ def main():
     ap.add_argument("--out", default=os.path.join(HERE, "results", "stage6"))
     a = ap.parse_args()
     with open(a.scenes) as fh:
-        scenes = [s for s in json.load(fh)["scenes"] if s["index"] < a.n]
+        scenes = [s for s in json.load(fh)["scenes"] if s["index"] < a.n and (a.tiers is None or s["tier"] in a.tiers)]
     with Pool(a.workers) as pool:
         rows = pool.map(one, [(s, a.mode, a.drive, a.arm, a.max_time, a.freeze, a.brake) for s in scenes], chunksize=1)
     d = "planner" if a.drive == "planner" else os.path.splitext(os.path.basename(a.drive))[0]
     arm = os.path.splitext(os.path.basename(a.arm))[0] if a.arm else "expert"
-    tag = "test" if "test" in os.path.basename(a.scenes) else "val"
+    tag = next((t for t, k in (("test", "test"), ("val", "val"), ("bench", "scenes.json")) if k in os.path.basename(a.scenes)), "val")
     name = f"{a.mode}_{d}_{arm}_{tag}"
     os.makedirs(a.out, exist_ok=True)
     keys = sorted({k for r in rows for k in r})
