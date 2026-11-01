@@ -191,7 +191,7 @@ def fig_routes():
     with open(path) as fh:
         d = json.load(fh)
     style = {"planner": (BLUE, "Planner (true position)"), "driverbrake:trained/driver_A_s1.npz": (ORANGE, "Learned driver A"), "cam": (AQUA, "Camera, no true position")}
-    fig, axes = plt.subplots(1, 5, figsize=(10, 2.5), sharex=True, sharey=True)
+    fig, axes = plt.subplots(1, 5, figsize=(10, 3.0), sharex=True, sharey=True)
     for ax, sc in zip(axes, SCENES):
         s = next(x for x in d["scenes"] if x["scenario"] == sc)
         for o in s.get("obstacles") or []:
@@ -211,8 +211,8 @@ def fig_routes():
     axes[2].set_xlabel("x (m). Square: start, star: target, grey: obstacles")
     h, l = axes[0].get_legend_handles_labels()
     fig.legend(h, l, frameon=False, ncol=3, loc="upper center")
-    fig.tight_layout(rect=(0, 0, 1, 0.92))
-    fig.savefig(os.path.join(F, "routes.png"))
+    fig.tight_layout(rect=(0, 0, 1, 0.9))
+    fig.savefig(os.path.join(F, "routes.png"), bbox_inches="tight")
 
 
 def main():
