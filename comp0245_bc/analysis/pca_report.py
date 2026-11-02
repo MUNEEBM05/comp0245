@@ -18,7 +18,7 @@ HERE = ROOT
 
 
 def main():
-    path = os.path.join(os.path.dirname(HERE), "R_features_for_regressors.npz")
+    path = os.path.join(HERE, "data", "R_features_for_regressors.npz")
     d = np.load(path)
     X, names = d["X_train"], [str(n) for n in d["feature_names"]]
     x = (X - d["x_mean"]) / d["x_std"]

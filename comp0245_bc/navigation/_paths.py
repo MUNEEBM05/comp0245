@@ -18,7 +18,7 @@ for _d in CODE_FOLDERS:
 # Result folders that hold other test sets under the same file names as the 50-scene benchmark
 # (10-scene first tests, Muneeb's K diagnosis, BO tuning scenes, rejected navigation versions,
 # the 120 s door check, fresh scenes, super test). find_result only looks inside them when asked directly.
-SEPARATE = ("first_10_scenes", "K_diagnosis", "bayes_opt_trials", "rejected_navigation", "door_120s", "3_final_tests")
+SEPARATE = ("first_10_scenes", "K_diagnosis", "bayes_opt_trials", "rejected_navigation", "door_120s", "3_final_tests", "abdullah_model_C", "abdullah_bases")
 
 
 def find_result(folder, name):

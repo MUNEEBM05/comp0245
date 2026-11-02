@@ -1,8 +1,8 @@
 """Split tier 4 into its two disturbances, to find out which one breaks a model (Stage B, step 1).
 
     python noise_and_delay/tier4_split.py
-    python evaluation/evaluate.py --policy trained/vK_kick.npz --tiers 4 --scenes benchmark/tier4_noise_only.json --out results_noise
-    python evaluation/evaluate.py --policy trained/vK_kick.npz --tiers 4 --scenes benchmark/tier4_delay_only.json --out results_delay
+    python evaluation/evaluate.py --policy trained/vK_kick.npz --tiers 4 --scenes benchmark/tier4_noise_only.json --out results/new_runs/noise_only
+    python evaluation/evaluate.py --policy trained/vK_kick.npz --tiers 4 --scenes benchmark/tier4_delay_only.json --out results/new_runs/delay_only
 
 Each tier-4 scene has sensor noise AND a command delay. This writes two copies of the same 50 scenes
 (same targets, starts and seeds), one with only the noise and one with only the delay. The frozen

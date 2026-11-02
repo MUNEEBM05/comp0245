@@ -1,13 +1,13 @@
 """Record many expert runs: one .npz file per run.
 
 Examples (from the RoboEnv pixi shell):
-    python training/collect.py --start 0 --end 10                 # first 10 runs, to check things work
-    python training/collect.py --start 0 --end 100 --workers 4    # person 1
-    python training/collect.py --start 100 --end 200 --workers 4  # person 2, on another laptop
-    python training/collect.py --start 10000 --end 10150 --noise 0.05 0.1 0.15 --out data/runs_nudged   # nudged runs
-    python training/collect.py --start 20000 --end 20100 --noise 0.05 0.1 --nudge-when reach --out data/runs_reach
-    python training/collect.py --start 30000 --end 30120 --kick 0.02 --out data/runs_kick      # velocity-recovery runs
-    python training/collect.py --start 40000 --end 40160 --obs-noise 0 0.005 0.01 0.02 --delay 0 1 2 3 4 --out data/runs_disturbed
+    python noise_and_delay/collect_noisy.py --start 0 --end 10                 # first 10 runs, to check things work
+    python noise_and_delay/collect_noisy.py --start 0 --end 100 --workers 4    # person 1
+    python noise_and_delay/collect_noisy.py --start 100 --end 200 --workers 4  # person 2, on another laptop
+    python noise_and_delay/collect_noisy.py --start 10000 --end 10150 --noise 0.05 0.1 0.15 --out data/runs_nudged   # nudged runs
+    python noise_and_delay/collect_noisy.py --start 20000 --end 20100 --noise 0.05 0.1 --nudge-when reach --out data/runs_reach
+    python noise_and_delay/collect_noisy.py --start 30000 --end 30120 --kick 0.02 --out data/runs_kick      # velocity-recovery runs
+    python noise_and_delay/collect_noisy.py --start 40000 --end 40160 --obs-noise 0 0.005 0.01 0.02 --delay 0 1 2 3 4 --out data/runs_disturbed
 
 Safe to stop (Ctrl+C) and restart: runs whose file already exists are skipped.
 Simulator warnings are hidden; set ROBOENV_VERBOSE=1 to see them.

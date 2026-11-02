@@ -1,247 +1,194 @@
 # COMP0245 behaviour cloning: a mobile manipulator learns to reach
 
-A neural network that copies the template's expert controller for the Robotnik base + Kinova arm:
-it maps **(base pose, arm joint angles and speeds, target)** to **(4 wheel speeds, 7 arm torques)**
-every millisecond, and drives the robot to the red dot on its own.
+A Robotnik four-wheeled base carrying a seven-joint Kinova arm, simulated in PyBullet. The course template
+provides an expert controller. We record the expert and train neural networks to copy it: every 1 ms the
+learned policy maps the robot's measured state and the target position to 7 arm torques and 4 wheel speeds.
+A trial succeeds when the hand comes within **1 cm** of the target and **stays there for 5 s**.
 
-**Result on the frozen benchmark (50 unseen normal scenes):**
+**Headline results**
 
-| | within 1 cm (the task's tolerance) | within 2 cm | within 5 cm | crashes |
-|---|---|---|---|---|
-| Expert controller (ceiling) | 98% | 98% | 98% | 0 |
-| **Final model K** (two training seeds) | **72%, 68%** | 94%, 96% | 100%, 100% | 1, 1 |
-| First attempt (plain copy, v0) | 0% | 0% | 0% | 50 |
+| System | What is learned | Fresh scenes (held 5 s) | Super test (610 trials) |
+|---|---|---|---|
+| Expert + A\* planner (ceiling) | nothing | 100% | 96.7% |
+| **Final system (S3)**: R-BO arm + Kalman filter + A\* planner | the arm | **90%** | **81.3%** |
+| Model R alone, fully learned (3 seeds) | arm and wheels | 86%, 90%, 84% | not run |
 
-The gap between v0 and K is seven design changes, each tested on the same scenes (section 4).
+Team: David, Abdullah Qureshi, Muneeb Musharaf.
 
 ---
 
-## 1. Setup
+## 1. Setup (once)
 
-Works on Windows, Linux and macOS inside the course's RoboEnv environment.
+The code runs inside the course's **RoboEnv** environment (pixi). Linux, WSL or macOS shown; on Windows
+PowerShell use the same commands with `\` paths.
 
-```powershell
-# once: link the robot models from your RoboEnv checkout (PowerShell, inside this folder)
-New-Item -ItemType Junction -Path .\models -Target "C:\Users\YOU\...\RoboEnv\models"
-#   Linux / macOS:  ln -s /path/to/RoboEnv/models models
+```bash
+# 1. link the robot models from your RoboEnv checkout into this folder
+ln -s /path/to/RoboEnv/models models
 
-# every session: enter the environment, then work from this folder
-cd C:\Users\YOU\...\RoboEnv
-pixi shell
-cd C:\path\to\comp0245_bc
+# 2. every session: open a shell in RoboEnv's environment, then work from this folder
+pixi shell --manifest-path /path/to/RoboEnv/pixi.toml          # simulator, testing, figures
+pixi shell --manifest-path /path/to/RoboEnv/pixi.toml -e ml    # the same plus PyTorch, for training
+cd /path/to/comp0245_bc
 ```
 
-`configs/robotnik_arm.json` is included. The recorded data, trained models and results are on
-OneDrive: *(add link)*. Unzip `data/` and `results/` next to the code to skip recording and testing.
+Run every command below **from this folder** (`comp0245_bc`). Testing and figures need only the default
+environment: trained models are plain NumPy arrays. Training needs PyTorch (`-e ml`).
 
-**Training needs PyTorch**, which lives in RoboEnv's `ml` environment: run training as
-`pixi run -e ml python training/train.py ...` (from the RoboEnv folder) or inside `pixi shell -e ml`.
-Everything else (recording, driving, figures) runs in the default environment: no PyTorch needed to
-drive, the trained weights are plain NumPy arrays.
+**What is in git and what is not.** All code, every trained model (`trained/`, about 100 files) and every
+result (`results/`) are in git. The recorded expert drives (`data/`) are not, because they are too large:
+download them from the team OneDrive into `data/` if you want to **train**, or re-record them (section 5).
+Testing a model never needs `data/`.
+The Gaussian-process model `trained/gp_R.pkl` (130 MB) is not in git either; `training/train_gp.py` rebuilds it.
 
-## 2. Quick start: three commands
+## 2. Test any model (one command)
 
-```powershell
-python core/expert_episode.py                                      # 1 expert run on the template's own scene
-#   expect: Outcome: reached | final error 0.21 cm | time 8.00 s      (identical to the template)
-python evaluation/evaluate.py --policy trained\vK_kick.npz --tiers 1 --n 10 --workers 3
-#   the final model drives 10 benchmark scenes (~2 min); expect about 7/10 reached
-python evaluation/compare.py --results results --policies expert vK_kick        # the results table
+```bash
+python3 evaluation/evaluate.py --policy <POLICY> --tiers 1 --n 50 --workers 4 --hold 5
 ```
 
-To watch a drive instead of reading numbers: `python -c "from rollout import *; rollout(MLPPolicy('trained/vK_kick.npz'), {'seed':0,'target':[0,1.1,0.5],'start_pose':[0,0,0]}, use_gui=True)"`.
+`<POLICY>` comes from the table in section 3. Results go to `results/new_runs/` (one CSV per tier, a
+summary JSON, a few plots of drives), and a one-line score is printed per tier.
 
-## 3. The pipeline, file by file
+| Option | Meaning |
+|---|---|
+| `--tiers 1 2 3` | benchmark tiers (50 scenes each, `benchmark/scenes.json`): **1** normal, **2** far or high targets, **3** awkward starts, **4** sensor noise + 1–4 ms delay, **5** changed physics (friction, mass), **6** objects anywhere, **7** everything mixed |
+| `--n 10` | only the first 10 scenes of each tier (quick check) |
+| `--hold 5` | the team's success rule: reach 1 cm **and hold it 5 s**. Without it, success = first touch within 1 cm (the template's rule) |
+| `--scenes benchmark/scenes_fresh.json --tiers 1` | 50 fresh scenes, used once for the final scores |
+| `--scenes scenes_obstacles/obstacles_test.json --tiers 10 11 12 13 14 --max-time 90` | obstacle scenes (30 each): 10 clear, 11 sparse, 12 cluttered, 13 gap, 14 blocked |
+| `--set obs_noise=0.01` | add sensor noise to every scene. Also `delay_steps=2` (ms), `payload_kg=0.5`, `torque_noise=2`, `objects=3` (a box in the way), `objects=4` (a wall with a doorway) |
+| `--only noise` / `--only delay` | tier 4 with only one of its two disturbances (diagnosis) |
+| `--plots 0` | skip the drive plots |
 
-| Step | File | What it does |
+To reproduce obstacle, box, door or super-test numbers exactly, first `export NAV_STUCK=0 OBJ_TIME=90`
+(the settings the super test used; see `results/2_obstacles/README.md`).
+
+Compare saved results as a table: `python3 evaluation/compare.py --tier 1` (every 50-scene benchmark
+result), or `--results <folder>` for one folder. The super-test table: `python3 evaluation/super_table.py`.
+
+To **watch** a drive in a window: `python3 abdullah_code/driver_A/watch.py --policy <POLICY> --tier 1 --index 0`
+(`--index` is the scene number 0–49; add `--top` for a view from above; in WSL first `export LIBGL_ALWAYS_SOFTWARE=1`).
+
+## 3. Every model: report name, how to run it, where its results are
+
+A policy is a model file, optionally wrapped: `model.npz:kfv` adds the Kalman filter,
+`model.npz:filt20noqd` a 20 ms position filter, `...:nav` David's VFH/Bug 2 obstacle layer,
+`planner:<arm>` Abdullah's A\* planner driving the base with `<arm>` on the arm, `driverbrake:<driver>:<arm>`
+Abdullah's learned Driver A (+ brake). Result folders are under `results/`.
+
+### The main line (no obstacles, no disturbances)
+
+| Report name | `--policy` | Results |
 |---|---|---|
-| Expert | `robotnik_arm_control.py` | The template's controllers, **unchanged** (base: P + phases; arm: PD + gravity) |
-| 1 Record | `expert_episode.py` | The template's loop as a function: one run, random target and start, logged at 100 Hz, one `.npz` per run. Options for nudged and kicked recordings |
-| | `collect.py` | Records a block of seeds in parallel; resumable |
-| | `check_runs.py` | Summary table and plots of recordings; `load_run()` used everywhere |
-| | `samplers.py` | Training ranges, held-out ranges, and the frozen benchmark scene generator |
-| 2 Prepare | `make_benchmark.py` | Generates the 200 benchmark scenes once (seeds 1,000,000+) and refuses to overwrite them |
-| | `make_split.py` | Splits runs 70/15/15 **by run**; saves the run IDs so everyone uses the same split |
-| | `features.py` | Measurements -> the 50 model inputs (basic, history, parking spot, integral) |
-| 3 Train | `train.py` | Trains MLP / linear / forest with every design switch; exports NumPy weights |
-| 4 Drive | `rollout.py` | A policy (expert, model, or hybrid) drives one scene; returns metrics |
-| | `evaluate.py` | Runs a policy on benchmark scenes (parallel), writes CSV + plots |
-| 5 Analyse | `compare.py` | Results table for all policies (text or markdown) |
-| | `analyse_failures.py` | Sorts every failed drive into one of five reasons |
-| | `make_figures.py` | All report figures from the results tables |
-| Support | `quiet.py` | Hides simulator spam; crashes become one line + `error.log` |
-| | `DATA_FORMAT.md` | Every field in a recording file |
+| Expert (ceiling) | `expert` | `1_main_models/expert/` |
+| v0 … G (the early ladder) | `trained/mlp_v0.npz` … `trained/vG_both.npz` | `0_old_tests/<name>/` |
+| **K** (Stage A final) | `trained/vK_kick.npz` | `1_main_models/K/` |
+| **P** (K + hold-still data) | `trained/vP_hold.npz` | `1_main_models/P/` |
+| **R** (P + IK inputs, main learned model) | `trained/vR_ik.npz` (seeds: `vR_ik_s1`, `vR_ik_s2`) | `1_main_models/R/` |
+| **R-BO** (final arm, Bayesian optimisation) | `trained/bo_t03.npz:kfv` | `1_main_models/R-BO/` |
+| Ablations (R minus one input group) | `trained/abl_no_goal.npz`, `abl_no_iknow`, `abl_no_history`, `abl_no_erravg`, `abl_no_ikavg` | `1_main_models/ablations/` |
+| Arm swap (P's arm + expert base) | `trained/vP_hold.npz:mlp_arm` (or `:mlp_wheels`) | `1_main_models/arm_swap/` |
+| GRU, TCN, attention | `trained/gru_P.npz`, `trained/tcn2.npz`, `trained/attn.npz` | `1_main_models/memory_models/` |
+| Linear, random forest, Gaussian process, PCA | `trained/cmp_linear.npz`, `cmp_forest.pkl`, `gp_R.pkl`, `vR_pca15.npz` | `1_main_models/other_learners/` |
+| DAgger, HG-DAgger, memory-free expert, Q, S-relative | `trained/vL_dagger1.npz`, `vL_hg1`, `markov_expert`, `vQ_hw3`, `vS_rel` | `1_main_models/side_experiments/` |
+| Abdullah's model C (K's inputs, ~50% more data) | `trained/vK_more_hold_arm.npz` | `1_main_models/abdullah_model_C/` |
 
-Folders: `data/` recordings (`runs` clean, `runs_nudged`, `runs_reach`, `runs_kick`), `benchmark/`
-the frozen scenes, `splits/`, `trained/` models, `results/` benchmark results, `figures/`.
+### Noise and delay (details: [`results/1_main_models/noise_and_delay/README.md`](results/1_main_models/noise_and_delay/README.md))
 
-## 4. The ladder: every version, same 50 scenes
-
-![ladder](figures/ladder.png)
-
-| Version | One change | Within 1 cm | What happened |
-|---|---|---|---|
-| v0 | plain copy of the expert's commands | 0/50 | arm collapses onto the ground within seconds |
-| v1 | network learns **torque minus gravity**; physics supplies gravity | 0/50 | arm no longer collapses, drifts slowly into the base |
-| v1+h | + **history** inputs (motion over 0.1 s / 0.5 s) | 0/50 | base now drives properly; arm still drifts |
-| v2 | + **nudged recordings** (expert recovering from pushes) | 0–1/50 | no crashes; reaches to ~10 cm, wobbles |
-| A | + **parking-spot** inputs | 2/10 | base stops instead of spinning |
-| D | + **separate arm/wheel nets** + **reach weighting** | 4/10 | hand within 1–4 cm, never settles |
-| D2 | + **reach-nudged recordings** (fine corrections) | 19–28/50 | 1 cm reached often; 3 crashes late in the drive |
-| E | + **integral inputs** (error averaged over 0.5 s / 2 s) | 25–32/50 | steady-state error closed; 3 crashes remain |
-| **K** | + **velocity-kick recordings** (recovery from motion) | **34–36/50** | crashes 3 → 1, seeds agree |
-
-Where a range is given, the version was trained with 2–3 random seeds; seed-to-seed spread was
-±10 points for D2, but only ±2 for K. Exact numbers: `results/*.csv`, `python evaluation/compare.py --results results`.
-
-### Why each change (the reasoning markers will ask about)
-
-1. **Gravity by physics.** Most arm torque just holds the arm up. The robot model computes that
-   exactly, so the network only learns the small correction on top (lab 1: use the physics you know).
-2. **History.** The expert has hidden state (turning vs driving phase, a creeping arm reference).
-   Recent motion reveals the phase without using the expert's internals.
-3. **Nudged recordings.** Clean runs only show the perfect path; the first mistake puts the model
-   somewhere it has never seen and errors compound (Ross et al. 2011). Nudging the executed command
-   while recording the expert's clean response teaches recovery (DART, Laskey et al. 2017).
-4. **Parking-spot inputs.** The expert's "stop" is a hard switch on reaching its parking spot. The
-   spot follows from the target by the template's formula, so the model is told where it is.
-5. **Separate networks, reach weighting.** Arm and wheels are different problems; reaching is a
-   small slice of each run but decides success. Neither helped alone; both helped once the base parked.
-6. **Reach-nudged recordings.** The last centimetre needs many examples of fine corrections.
-7. **Integral inputs.** The model acted like a P controller: it stopped 1–3 cm short (steady-state
-   error). The expert avoids this with a reference that keeps creeping. Averaging the error over
-   time gives the model integral action from measurements alone (PID, lab 3).
-8. **Velocity-kick recordings.** Remaining crashes happened when the arm picked up speed never
-   seen in training (4–6 standard deviations out), then ran away. Kicking the arm while recording
-   adds recovery-from-motion examples. Crashes fell 3 → 1 and the seeds agreed.
-
-### Things that did NOT help (and are in the report as ablations)
-
-| Tried | Result | Why |
+| Report name | `--policy` | Results |
 |---|---|---|
-| Wheel speeds as inputs | 0–9/50 | the model copies the current speed as its next command (the copycat shortcut) and never stops turning |
-| Model outputs an arm reference, fixed PD makes torque | 26/50 (vs 32) | no gain over predicting torque; also outside the brief's outputs |
-| Clipping inputs to the training range | no change | the runaway was in joint speed, which clipping cannot stop once the arm is moving |
+| K-noisy (L), K-filtered (M), K-history-filter (M2), K-clean-labels (M2-noise0), K-delay (N) | `trained/vL_disturbed.npz`, `vM_smooth`, `vM2_smooth_hist`, `vM2_noise0`, `vN_delay` | `noise_and_delay/K_diagnosis/` |
+| R + position filter, R + Kalman filter | `trained/vR_ik.npz:filt20noqd`, `trained/vR_ik.npz:kfv` | `noise_and_delay/filters_and_robust_models/` |
+| Ensemble, noise augmentation, dropout, weight decay, domain randomisation | `ens:trained/vR_ik.npz,trained/vR_ik_s1.npz,trained/vR_ik_s2.npz`, `trained/vT_aug.npz`, `vU_drop`, `vU_wd`, `vM_dr` | same |
 
-### Model comparison (same inputs, same data, same scenes)
+### Obstacles and bases (details: [`results/2_obstacles/README.md`](results/2_obstacles/README.md))
 
-![models](figures/models.png)
-
-| Model | Within 1 cm | Crashes | Decision time |
-|---|---|---|---|
-| Linear regression | 0/50 | 50/50 | 0.2 ms |
-| Random forest (20 trees, depth 12) | 0/20 | 18/20 | 2.5 ms (over the 1 ms budget) |
-| MLP (K) | 34–36/50 | 1/50 | 0.3 ms |
-
-Offline, the ranking is the same (validation error: MLP 0.19 Nm, forest 0.36, linear 0.47), but
-offline error understates the gap enormously: a model 2x worse offline is unusable in closed loop.
-Trees give step-shaped outputs; at 1,000 decisions a second every step is a kick to the arm.
-
-![offline vs online](figures/offline_vs_online.png)
-
-### Where the final model still fails
-
-![failure reasons](figures/failure_reasons.png)
-
-Of K's 14–16 failures on 50 scenes, all but one are "base parked, hand within 1–2 cm, never inside
-1 cm". The base never fails any more. The one crash (scene 40, both seeds) is a low target where
-the arm drifts after hovering.
-
-## 5. The benchmark (200 frozen scenes, `benchmark/scenes.json`)
-
-Generated once before any training, from a seed block (1,000,000+) that cannot overlap the training
-seeds, and never changed since. Every policy, including the expert, runs on exactly these scenes.
-
-| Tier | Scenes | What changes | What it tests |
-|---|---|---|---|
-| 1 | 50 | new targets and starts inside the training ranges | accuracy |
-| 2 | 50 | targets higher (1.10–1.25 m) or farther (2.0–2.5 m) than any in training | generalisation |
-| 3 | 50 | starts far away facing the wrong way, or right next to the parking spot | compounding errors, the expert's own weak spot |
-| 4 | 50 | tier-1 scenes plus sensor noise (std 0.005–0.02) and a 1–4 ms command delay | robustness |
-
-Metrics per scene: reached (hand within 1 cm), closest approach, final distance, time, crash,
-command jerk, decision time, and where the base ended. Success is also reported at 2 cm and 5 cm,
-with 95% confidence ranges, because 50 scenes leave ±13 points of uncertainty.
-
-![tiers](figures/tiers.png)
-
-| Tier | Expert | Final model K |
+| Report name | `--policy` | Results |
 |---|---|---|
-| 1 normal scenes | 98% | 72% |
-| 2 harder targets (higher / farther than training) | 100% | 62% |
-| 3 awkward starts | 100% | 78% |
-| 4 sensor noise + 1–4 ms delay | 82% | **0%** |
+| **S1** expert + A\* planner | `planner` | `3_final_tests/super_test/` |
+| **S2** R-BO + Kalman + VFH/Bug 2 | `trained/bo_t03.npz:kfv:nav` | `2_obstacles/R-BO+Kalman+VFH_Bug2_nav/` |
+| **S3 final** R-BO + Kalman + A\* planner | `planner:trained/bo_t03.npz:kfv` | `3_final_tests/super_test/` |
+| **S4** R-BO + Kalman + Driver A + brake | `driverbrake:trained/driver_A.npz:trained/bo_t03.npz:kfv` | `3_final_tests/super_test/` |
+| **S5** S3 with the camera finding the target | `cam:planner:trained/bo_t03.npz:kfv` | `3_final_tests/super_test/` |
+| Model S (LiDAR inputs) | `trained/vS_lidar.npz:filt20noqd` | `2_obstacles/S_lidar_inputs+position_filter_20ms/` |
+| Driver B, off-spot arm | `driver:trained/driver_B.npz`, `planner:trained/vS_arm.npz` | `2_obstacles/abdullah_bases/` |
 
-K generalises to new targets and starts (tiers 2–3 stay within ~10 points of tier 1) but collapses
-under sensor noise and delay. Its inputs include joint speeds and 0.1 s motion deltas, which
-amplify 1–2 cm position noise into large spikes, and the network has never seen such inputs; the
-expert's PD controller is physically damped. This is the Stage B problem: train on noisy recordings
-(domain randomisation) and smooth the derived inputs. All tables: `benchmark/RESULTS.md`.
+## 4. Train a model
 
-**A disturbance we had to drop.** Tier 4 originally also shoved the base sideways (100–300 N for
-0.1 s). The *expert* then failed 47 of 50 scenes: once pushed off its heading it never re-enters
-its "align" phase and drives in a circle, the same orbit failure seen in 2 of the 300 clean
-recordings. A delay of 6 ms or more crashes it as well. A benchmark the teacher cannot pass says
-nothing about the student, so tier 4 keeps only disturbances the expert survives. Both findings
-are expert limitations worth stating: the clone can at best inherit them.
+Training needs the recordings in `data/` and the `-e ml` environment. Each command writes `trained/<name>.npz`;
+use a new `--name` so the committed models are never overwritten. Every model also stores the exact
+options it was trained with (`meta` inside the `.npz`).
 
-## 6. Data
-
-| Set | Runs | How recorded | Used for |
-|---|---|---|---|
-| clean | 300 (297 usable) | expert undisturbed, random target and start | train / val / test split |
-| nudged | 150 (91 usable) | held random offset on the executed command | training only |
-| reach-nudged | 120 (101 usable) | offsets only while the arm is reaching | training only |
-| kicked | 120 (119 usable) | 50 ms torque pulses while reaching | training only |
-
-Validation is always the same 45 clean runs, so every version is comparable. The 44 clean test runs
-are kept for offline scores only; the benchmark scenes are the real test. One file per run, 100 Hz,
-`float32`; field list in `DATA_FORMAT.md`. Seeds are saved in every file, so any run can be replayed.
-
-**Expert failures found while recording:** the base can orbit its parking spot when it starts close
-to it (tightest drivable circle ~0.8 m); 2 of 300 clean runs failed this way and are excluded.
-The template labels a run "stalled" before checking "reached", so a run within tolerance can be
-mislabelled (seed 189); success is judged on the final error instead.
-
-## 7. Reproducing everything from scratch
-
-```powershell
-python training/make_benchmark.py                                                   # frozen scenes (already included)
-python training/collect.py --start 0 --end 300 --workers 3                          # clean runs      (~15 min)
-python training/collect.py --start 10000 --end 10150 --noise 0.05 0.1 0.15 --workers 3 --out data\runs_nudged
-python training/collect.py --start 20000 --end 20120 --noise 0.05 0.1 --nudge-when reach --workers 3 --out data\runs_reach
-python training/collect.py --start 30000 --end 30120 --kick 0.02 --workers 3 --out data\runs_kick
-python training/make_split.py
-pixi run -e ml python training/train.py --name vK_kick --history deltas --goal --separate --reach-weight 3 --integral --extra-train data\runs_nudged data\runs_reach data\runs_kick
-python evaluation/evaluate.py --policy expert            --tiers 1 2 3 4 --n 50 --workers 3 --out results
-python evaluation/evaluate.py --policy trained\vK_kick.npz --tiers 1 2 3 4 --n 50 --workers 3 --out results
-python evaluation/compare.py --results results --markdown
-python evaluation/analyse_failures.py --results results --policies vK_kick
-python analysis/make_figures.py
+```bash
+K="--history deltas --goal --separate --reach-weight 3 --integral"
+D="data/runs_nudged data/runs_reach data/runs_kick"
+python3 training/train.py --name my_K $K --extra-train $D                                         # K
+python3 training/train.py --name my_P $K --extra-train $D data/runs_hold data/runs_extreme        # P
+python3 training/train.py --name my_R --ik $K --extra-train $D data/runs_hold data/runs_extreme   # R
+python3 training/train.py --name my_RBO --ik --history deltas --goal --separate --integral --reach-weight 2.473 \
+        --lr 0.000741 --batch 2048 --hidden 192 192 192 --extra-train $D data/runs_hold data/runs_extreme   # R-BO
+python3 training/bayes_opt.py                                       # the 12-trial search that found R-BO (hours)
 ```
 
-Earlier ladder versions: `train.py` with fewer switches (see its docstring), e.g. v0 is
-`--torque raw`, v1 is the default, E drops `data\runs_kick`. Results differ by a scene or two
-between machines (floating point, package versions); the picture does not. Use the trained models
-in `trained/` for exact numbers.
+The noise-and-delay models (L, M, M2, M2-noise0, N) are in the noise README; GRU / TCN / attention use
+`training/train_gru.py` and `training/train_conv.py`, the Gaussian process `training/train_gp.py`, DAgger
+`training/dagger.py`. Every script prints its options with `--help`. Driver A and model C were trained
+with Abdullah's own scripts: [`abdullah_code/README.md`](abdullah_code/README.md).
 
-## 8. When things go wrong
+## 5. Record expert data
 
-- Simulator warnings are hidden; `$env:ROBOENV_VERBOSE = "1"` shows them.
-- A failed recording is listed as `error` with details in `data/runs/failures.log`; rerun to retry.
-- Any crash prints one line and writes details to `error.log` here.
-- Ctrl+C stops cleanly; finished runs are kept and the next run of the command carries on.
-- A plot or CSV open in another program is skipped with a note, not a crash.
+```bash
+python3 training/collect.py --start 0 --end 300 --workers 4                                   # data/runs (clean)
+python3 training/collect.py --start 10000 --end 10150 --noise 0.05 0.1 0.15 --out data/runs_nudged
+python3 training/collect.py --start 20000 --end 20120 --noise 0.05 0.1 --nudge-when reach --out data/runs_reach
+python3 training/collect.py --start 30000 --end 30120 --kick 0.02 --out data/runs_kick
+python3 training/collect.py --start 60000 --end 60200 --hold 5 --out data/runs_hold
+python3 training/collect.py --start 61000 --end 61150 --hold 5 --z-bands 0.15 0.3 0.95 1.1 --out data/runs_extreme
+python3 training/make_split.py                     # train / validation / test split by run (already in splits/)
+```
 
-## 9. Limits and what we would do next
+Recording is seeded, so the same command gives the same drives. The benchmark scenes in `benchmark/` were
+generated once (`training/make_benchmark.py`) and must never be regenerated or edited.
 
-- 72% within 1 cm vs the expert's 98%: the remaining gap is the last centimetre, not driving.
-- Results vary by about ±5 points between training seeds (K) and more for earlier versions.
-- Not yet done: domain randomisation for tiers 2–4 (vary friction, mass, noise while recording),
-  obstacles with a safety layer, Bayesian optimisation of the network and integral time constants.
-- A better teacher (fix the expert's orbit) would raise the ceiling; the clone cannot beat it.
+## 6. Rebuild the figures and tables
 
-## References
+```bash
+python3 analysis/report_figures.py       # every report figure -> figures/report/
+python3 analysis/make_figures.py         # the Stage A figures   -> figures/
+python3 analysis/pca_report.py           # PCA of R's inputs     -> figures/pca_inputs.png
+python3 evaluation/super_table.py        # the super-test table
+python3 evaluation/analyse_failures.py --results results --policies vK_kick vR_ik   # why drives failed
+```
 
-Pomerleau 1989 (ALVINN) · Ross, Gordon & Bagnell 2011 (DAgger: compounding errors) ·
-Laskey et al. 2017 (DART: noise injection) · Tobin et al. 2017 (domain randomisation).
+## 7. Where everything is
+
+| Folder | What |
+|---|---|
+| `core/` | the shared engine: the expert (`expert_episode.py`, `robotnik_arm_control.py`), model inputs (`features.py`, `ik_features.py`), running any policy (`rollout.py`), scene samplers |
+| `navigation/` | bases and sensing: A\* planner, VFH/Bug 2 layer, Driver A/B, LiDAR, odometry, camera |
+| `training/` | recording (`collect.py`), splitting, training every kind of model, Bayesian optimisation, DAgger |
+| `noise_and_delay/` | the noise diagnosis: disturbed recording, noise check, tier-4 split |
+| `evaluation/` | `evaluate.py` (test any policy), `compare.py`, `super_table.py`, `analyse_failures.py` |
+| `analysis/` | figures and data reports |
+| `abdullah_code/` | Abdullah's own recording and training scripts for Driver A and model C (kept as he wrote them) |
+| `trained/` | every trained model |
+| `results/` | every result, by section: `0_old_tests/`, `1_main_models/` (K, P, R, R-BO, noise and delay, side experiments, model C), `2_obstacles/`, `3_final_tests/` (fresh scenes, super test). Model folders with several tiers have `tier1/`, `tier2/` … subfolders |
+| `benchmark/`, `scenes_obstacles/` | the frozen test scenes |
+| `figures/` | all figures; `figures/report/` holds the report's |
+| `docs/` | team notes from the project (history) |
+| `scripts/` | the shell scripts the server runs used, kept as a record (their paths are the server's) |
+
+Each code folder has a small `_paths.py`: it gives every script the project folder and lets the folders
+import each other, so you can run any script from `comp0245_bc` as shown.
+
+## 8. When something goes wrong
+
+- `No module named pinocchio` (or pybullet): you are not inside `pixi shell` (section 1).
+- `Cannot load URDF file`: the `models` link is missing (section 1).
+- `No module named torch`: training needs `pixi shell ... -e ml`.
+- `run ... not found in data/...`: that recording set is not downloaded (section 1).
+- Small differences (a millimetre, a scene or two) between computers are normal: floating point and
+  library versions. On one computer every run is exactly repeatable.
+- Simulator warnings are hidden; `export ROBOENV_VERBOSE=1` shows them. A crash prints one line and writes
+  the details to `error.log`. Ctrl+C stops cleanly; running the same command again carries on.
