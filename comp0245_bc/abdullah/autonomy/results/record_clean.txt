@@ -1,0 +1,303 @@
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[  1/300] seed 200000: reached 15.9 s
+[  2/300] seed 200002: reached 17.5 s
+[  3/300] seed 200003: reached 17.5 s
+[  4/300] seed 200006: reached 15.4 s
+[  5/300] seed 200005: reached 18.2 s
+[  6/300] seed 200004: reached 19.7 s
+[  7/300] seed 200007: reached 17.1 s
+[  8/300] seed 200008: reached 15.1 s
+[  9/300] seed 200009: reached 18.2 s
+[ 10/300] seed 200010: reached 14.5 s
+[ 11/300] seed 200011: reached 16.1 s
+[ 12/300] seed 200012: reached 20.9 s
+[ 13/300] seed 200014: reached 13.3 s
+[ 14/300] seed 200013: reached 15.3 s
+[ 15/300] seed 200015: reached 19.7 s
+[ 16/300] seed 200016: reached 16.5 s
+[ 17/300] seed 200017: reached 16.1 s
+[ 18/300] seed 200018: reached 15.2 s
+[ 19/300] seed 200020: reached 17.8 s
+[ 20/300] seed 200019: reached 19.5 s
+[ 21/300] seed 200021: reached 15.7 s
+[ 22/300] seed 200022: reached 14.5 s
+[ 23/300] seed 200023: reached 15.9 s
+[ 24/300] seed 200024: reached 15.1 s
+[ 25/300] seed 200027: reached 16.0 s
+[ 26/300] seed 200028: reached 20.6 s
+[ 27/300] seed 200029: reached 12.8 s
+[ 28/300] seed 200030: reached 13.8 s
+[ 29/300] seed 200031: reached 13.9 s
+[ 30/300] seed 200032: reached 19.5 s
+[ 31/300] seed 200033: reached 15.8 s
+[ 32/300] seed 200034: reached 17.8 s
+[ 33/300] seed 200035: reached 15.8 s
+[ 34/300] seed 200036: reached 17.0 s
+[ 35/300] seed 200038: reached 21.7 s
+[ 36/300] seed 200040: reached 19.4 s
+[ 37/300] seed 200041: reached 16.0 s
+[ 38/300] seed 200042: reached 18.0 s
+[ 39/300] seed 200043: reached 14.5 s
+[ 40/300] seed 200044: reached 17.4 s
+[ 41/300] seed 200046: reached 17.5 s
+[ 42/300] seed 200047: reached 20.4 s
+[ 43/300] seed 200049: reached 16.5 s
+[ 44/300] seed 200052: reached 14.4 s
+[ 45/300] seed 200051: reached 17.5 s
+[ 46/300] seed 200053: reached 18.7 s
+[ 47/300] seed 200056: reached 12.2 s
+[ 48/300] seed 200055: reached 20.6 s
+[ 49/300] seed 200057: reached 16.9 s
+[ 50/300] seed 200058: reached 17.9 s
+[ 51/300] seed 200060: reached 11.7 s
+[ 52/300] seed 200059: reached 18.1 s
+[ 53/300] seed 200062: reached 13.7 s
+[ 54/300] seed 200061: reached 19.0 s
+[ 55/300] seed 200063: reached 18.8 s
+[ 56/300] seed 200065: reached 18.0 s
+[ 57/300] seed 200064: reached 22.4 s
+[ 58/300] seed 200067: reached 11.9 s
+[ 59/300] seed 200068: reached 17.0 s
+[ 60/300] seed 200069: reached 17.4 s
+[ 61/300] seed 210000: reached 23.2 s
+[ 62/300] seed 210001: reached 29.8 s
+[ 63/300] seed 210002: reached 28.1 s
+[ 64/300] seed 210005: reached 34.9 s
+[ 65/300] seed 210007: reached 31.2 s
+[ 66/300] seed 210008: reached 30.7 s
+[ 67/300] seed 210009: reached 28.6 s
+[ 68/300] seed 210012: reached 31.1 s
+[ 69/300] seed 210011: reached 34.4 s
+[ 70/300] seed 210013: reached 30.7 s
+[ 71/300] seed 210014: reached 34.5 s
+[ 72/300] seed 210015: reached 34.4 s
+[ 73/300] seed 210016: reached 28.2 s
+[ 74/300] seed 210018: reached 24.2 s
+[ 75/300] seed 210017: reached 28.4 s
+[ 76/300] seed 210019: reached 31.7 s
+[ 77/300] seed 210020: reached 28.5 s
+[ 78/300] seed 210021: reached 29.8 s
+[ 79/300] seed 210022: reached 36.4 s
+[ 80/300] seed 210024: reached 28.3 s
+[ 81/300] seed 210025: reached 28.0 s
+[ 82/300] seed 210026: reached 33.3 s
+[ 83/300] seed 210027: reached 23.8 s
+[ 84/300] seed 210028: reached 30.4 s
+[ 85/300] seed 210029: reached 28.3 s
+[ 86/300] seed 210031: reached 29.4 s
+[ 87/300] seed 210033: reached 30.6 s
+[ 88/300] seed 210036: reached 30.2 s
+[ 89/300] seed 210034: reached 33.8 s
+[ 90/300] seed 210037: reached 27.0 s
+[ 91/300] seed 210039: reached 24.9 s
+[ 92/300] seed 210038: reached 33.3 s
+[ 93/300] seed 210040: reached 28.6 s
+[ 94/300] seed 210043: reached 32.4 s
+[ 95/300] seed 210044: reached 28.7 s
+[ 96/300] seed 210047: reached 26.3 s
+[ 97/300] seed 210048: reached 24.9 s
+[ 98/300] seed 210049: reached 30.3 s
+[ 99/300] seed 210050: reached 28.1 s
+[100/300] seed 210051: reached 26.1 s
+[101/300] seed 210053: reached 27.7 s
+[102/300] seed 210054: reached 28.6 s
+[103/300] seed 210055: reached 28.5 s
+[104/300] seed 210058: reached 29.2 s
+[105/300] seed 210057: reached 33.6 s
+[106/300] seed 210059: reached 30.6 s
+[107/300] seed 210060: reached 29.2 s
+[108/300] seed 210061: reached 33.6 s
+[109/300] seed 210062: reached 25.8 s
+[110/300] seed 210064: reached 24.8 s
+[111/300] seed 210065: reached 26.2 s
+[112/300] seed 210066: reached 29.8 s
+[113/300] seed 210067: reached 29.9 s
+[114/300] seed 210068: reached 32.4 s
+[115/300] seed 210070: reached 29.6 s
+[116/300] seed 210072: reached 27.0 s
+[117/300] seed 210073: reached 29.8 s
+[118/300] seed 210074: reached 29.1 s
+[119/300] seed 210075: reached 32.4 s
+[120/300] seed 210077: reached 32.7 s
+[121/300] seed 220002: reached 33.5 s
+[122/300] seed 220000: reached 48.9 s
+[123/300] seed 220003: reached 41.1 s
+[124/300] seed 220004: reached 41.8 s
+[125/300] seed 220006: reached 41.2 s
+[126/300] seed 220007: reached 46.0 s
+[127/300] seed 220008: reached 48.9 s
+[128/300] seed 220010: reached 48.4 s
+[129/300] seed 220011: reached 47.2 s
+[130/300] seed 220013: reached 44.0 s
+[131/300] seed 220012: reached 47.8 s
+[132/300] seed 220014: reached 35.6 s
+[133/300] seed 220015: reached 45.1 s
+[134/300] seed 220017: reached 44.3 s
+[135/300] seed 220019: reached 53.5 s
+[136/300] seed 220021: reached 44.7 s
+[137/300] seed 220020: reached 46.2 s
+[138/300] seed 220022: reached 37.1 s
+[139/300] seed 220024: reached 40.7 s
+[140/300] seed 220023: reached 47.1 s
+[141/300] seed 220025: reached 50.7 s
+[142/300] seed 220026: reached 48.9 s
+[143/300] seed 220029: reached 47.4 s
+[144/300] seed 220030: reached 53.5 s
+[145/300] seed 220032: reached 43.2 s
+[146/300] seed 220035: reached 48.6 s
+[147/300] seed 220038: reached 48.5 s
+[148/300] seed 220041: reached 42.9 s
+[149/300] seed 220043: reached 44.7 s
+[150/300] seed 220044: reached 40.5 s
+[151/300] seed 220046: reached 42.2 s
+[152/300] seed 220049: reached 42.7 s
+[153/300] seed 220051: reached 44.9 s
+[154/300] seed 220052: reached 44.8 s
+[155/300] seed 220056: reached 40.6 s
+[156/300] seed 220057: reached 43.6 s
+[157/300] seed 220062: reached 37.5 s
+[158/300] seed 220060: reached 48.4 s
+[159/300] seed 220064: reached 37.6 s
+[160/300] seed 220066: reached 45.5 s
+[161/300] seed 220065: reached 49.3 s
+[162/300] seed 220068: reached 41.4 s
+[163/300] seed 220069: reached 42.0 s
+[164/300] seed 220071: reached 52.4 s
+[165/300] seed 220073: reached 49.2 s
+[166/300] seed 220074: reached 48.1 s
+[167/300] seed 220076: reached 44.4 s
+[168/300] seed 220077: reached 46.8 s
+[169/300] seed 220078: reached 43.7 s
+[170/300] seed 220079: reached 46.2 s
+[171/300] seed 220080: reached 45.8 s
+[172/300] seed 220081: reached 43.3 s
+[173/300] seed 220082: reached 48.5 s
+[174/300] seed 220083: reached 46.8 s
+[175/300] seed 220085: reached 47.5 s
+[176/300] seed 220087: reached 41.4 s
+[177/300] seed 220086: reached 49.1 s
+[178/300] seed 220088: reached 38.6 s
+[179/300] seed 220089: reached 47.6 s
+[180/300] seed 230002: reached 31.0 s
+[181/300] seed 220091: reached 48.7 s
+[182/300] seed 230008: reached 29.9 s
+[183/300] seed 230004: reached 36.8 s
+[184/300] seed 230005: reached 36.5 s
+[185/300] seed 230011: reached 28.7 s
+[186/300] seed 230012: reached 32.2 s
+[187/300] seed 230014: reached 34.7 s
+[188/300] seed 230018: reached 26.0 s
+[189/300] seed 230015: reached 30.8 s
+[190/300] seed 230019: reached 31.9 s
+[191/300] seed 230020: reached 34.2 s
+[192/300] seed 230021: reached 33.9 s
+[193/300] seed 230023: reached 27.5 s
+[194/300] seed 230025: reached 30.5 s
+[195/300] seed 230024: reached 32.1 s
+[196/300] seed 230027: reached 31.2 s
+[197/300] seed 230028: reached 31.6 s
+[198/300] seed 230029: reached 31.8 s
+[199/300] seed 230033: reached 35.6 s
+[200/300] seed 230036: reached 32.3 s
+[201/300] seed 230034: reached 35.4 s
+[202/300] seed 230038: reached 32.0 s
+[203/300] seed 230039: reached 33.8 s
+[204/300] seed 230040: reached 33.3 s
+[205/300] seed 230041: reached 33.7 s
+[206/300] seed 230042: reached 29.5 s
+[207/300] seed 230043: reached 30.7 s
+[208/300] seed 230044: reached 35.7 s
+[209/300] seed 230046: reached 34.8 s
+[210/300] seed 230047: reached 35.5 s
+[211/300] seed 230048: reached 39.9 s
+[212/300] seed 230050: reached 29.7 s
+[213/300] seed 230051: reached 36.8 s
+[214/300] seed 230053: reached 35.7 s
+[215/300] seed 230054: reached 32.7 s
+[216/300] seed 230055: reached 32.9 s
+[217/300] seed 230057: reached 34.1 s
+[218/300] seed 230059: reached 31.6 s
+[219/300] seed 230060: reached 31.7 s
+[220/300] seed 230061: reached 35.1 s
+[221/300] seed 230062: reached 36.9 s
+[222/300] seed 230063: reached 30.1 s
+[223/300] seed 230064: reached 30.4 s
+[224/300] seed 230065: reached 32.2 s
+[225/300] seed 230066: reached 32.7 s
+[226/300] seed 230067: reached 27.9 s
+[227/300] seed 230068: reached 32.0 s
+[228/300] seed 230071: reached 33.2 s
+[229/300] seed 230073: reached 28.1 s
+[230/300] seed 230074: reached 27.0 s
+[231/300] seed 230076: reached 31.0 s
+[232/300] seed 230077: reached 30.1 s
+[233/300] seed 230078: reached 29.5 s
+[234/300] seed 230079: reached 34.1 s
+[235/300] seed 230081: reached 34.5 s
+[236/300] seed 230082: reached 34.0 s
+[237/300] seed 230083: reached 34.9 s
+[238/300] seed 230084: reached 34.2 s
+[239/300] seed 230085: reached 30.1 s
+[240/300] seed 230087: reached 36.3 s
+[241/300] seed 240010: reached 31.1 s
+[242/300] seed 240027: reached 34.9 s
+[243/300] seed 240034: reached 32.0 s
+[244/300] seed 240042: reached 32.1 s
+[245/300] seed 240039: reached 37.5 s
+[246/300] seed 240047: reached 33.5 s
+[247/300] seed 240055: reached 34.3 s
+[248/300] seed 240086: reached 38.2 s
+[249/300] seed 240089: reached 39.1 s
+[250/300] seed 240095: reached 35.6 s
+[251/300] seed 240130: reached 31.9 s
+[252/300] seed 240142: reached 31.1 s
+[253/300] seed 240134: reached 36.2 s
+[254/300] seed 240148: reached 35.8 s
+[255/300] seed 240149: reached 30.8 s
+[256/300] seed 240153: reached 35.2 s
+[257/300] seed 240170: reached 36.5 s
+[258/300] seed 240171: reached 36.0 s
+[259/300] seed 240188: reached 35.5 s
+[260/300] seed 240234: reached 36.9 s
+[261/300] seed 240237: reached 33.2 s
+[262/300] seed 240240: reached 35.9 s
+[263/300] seed 240250: reached 33.7 s
+[264/300] seed 240252: reached 30.1 s
+[265/300] seed 240261: reached 33.3 s
+[266/300] seed 240268: reached 34.2 s
+[267/300] seed 240297: reached 32.7 s
+[268/300] seed 240307: reached 36.9 s
+[269/300] seed 240324: reached 38.3 s
+[270/300] seed 240336: reached 36.7 s
+[271/300] seed 240337: reached 30.6 s
+[272/300] seed 240349: reached 32.4 s
+[273/300] seed 240353: reached 37.6 s
+[274/300] seed 240373: reached 36.7 s
+[275/300] seed 240382: reached 33.5 s
+[276/300] seed 240387: reached 33.1 s
+[277/300] seed 240397: reached 39.7 s
+[278/300] seed 240401: reached 34.6 s
+[279/300] seed 240402: reached 33.5 s
+[280/300] seed 240405: reached 34.0 s
+[281/300] seed 240416: reached 36.4 s
+[282/300] seed 240435: reached 31.3 s
+[283/300] seed 240443: reached 32.6 s
+[284/300] seed 240453: reached 35.6 s
+[285/300] seed 240458: reached 36.9 s
+[286/300] seed 240462: reached 37.7 s
+[287/300] seed 240463: reached 33.4 s
+[288/300] seed 240464: reached 35.9 s
+[289/300] seed 240465: reached 30.9 s
+[290/300] seed 240470: reached 37.1 s
+[291/300] seed 240492: reached 33.8 s
+[292/300] seed 240499: reached 37.3 s
+[293/300] seed 240508: reached 35.5 s
+[294/300] seed 240510: reached 36.1 s
+[295/300] seed 240520: reached 32.0 s
+[296/300] seed 240527: reached 34.9 s
+[297/300] seed 240531: reached 30.7 s
+[298/300] seed 240548: reached 32.3 s
+[299/300] seed 240549: reached 32.6 s
+[300/300] seed 240553: reached 35.4 s
+done: {"reached": 300}

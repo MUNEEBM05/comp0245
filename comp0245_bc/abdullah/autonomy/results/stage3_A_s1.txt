@@ -1,0 +1,165 @@
+
+driver_A_s1_expert_hold5: tier 10, 30 scenes
+  [  1/30] scene  3: reached        err    0.1 cm | t  19.0 s
+  [  2/30] scene  5: reached        err    0.4 cm | t  20.6 s
+  [  3/30] scene  4: reached        err    0.2 cm | t  21.8 s
+  [  4/30] scene  2: reached        err    0.0 cm | t  21.7 s
+  [  5/30] scene  0: reached        err    0.4 cm | t  26.1 s
+  [  6/30] scene  1: reached        err    0.1 cm | t  30.1 s
+  [  7/30] scene  8: reached        err    0.2 cm | t  17.4 s
+  [  8/30] scene  7: reached        err    0.3 cm | t  22.6 s
+  [  9/30] scene  9: reached        err    0.3 cm | t  23.0 s
+  [ 10/30] scene  6: reached        err    0.1 cm | t  25.4 s
+  [ 11/30] scene 11: reached        err    0.1 cm | t  17.2 s
+  [ 12/30] scene 10: reached        err    0.3 cm | t  24.7 s
+  [ 13/30] scene 13: reached        err    0.9 cm | t  21.2 s
+  [ 14/30] scene 14: reached        err    0.0 cm | t  20.6 s
+  [ 15/30] scene 15: reached        err    0.2 cm | t  23.6 s
+  [ 16/30] scene 16: reached        err    0.2 cm | t  20.6 s
+  [ 17/30] scene 17: reached        err    0.4 cm | t  25.0 s
+  [ 18/30] scene 19: reached        err    0.3 cm | t  24.0 s
+  [ 19/30] scene 20: reached        err    0.1 cm | t  21.1 s
+  [ 20/30] scene 21: reached        err    0.1 cm | t  19.9 s
+  [ 21/30] scene 12: reached        err    0.3 cm | t  67.9 s
+  [ 22/30] scene 18: reached        err    0.1 cm | t  46.4 s
+  [ 23/30] scene 24: reached        err    0.3 cm | t  21.0 s
+  [ 24/30] scene 22: reached        err    0.0 cm | t  32.6 s
+  [ 25/30] scene 25: reached        err    0.4 cm | t  22.3 s
+  [ 26/30] scene 26: reached        err    0.2 cm | t  18.5 s
+  [ 27/30] scene 23: reached        err    0.3 cm | t  41.6 s
+  [ 28/30] scene 29: reached        err    0.1 cm | t  18.5 s
+  [ 29/30] scene 27: reached        err    0.2 cm | t  23.7 s
+  [ 30/30] scene 28: reached        err    0.1 cm | t  19.5 s
+  -> success 100% | median final error 0.2 cm | time to reach 25.2 s | {'reached': 30} | 4.4 min
+
+driver_A_s1_expert_hold5: tier 11, 30 scenes
+  [  1/30] scene  2: reached        err    0.0 cm | t  27.4 s
+  [  2/30] scene  4: reached        err    0.2 cm | t  28.4 s
+  [  3/30] scene  3: reached        err    0.5 cm | t  29.3 s
+  [  4/30] scene  5: reached        err    0.4 cm | t  31.7 s
+  [  5/30] scene  0: reached        err    0.3 cm | t  34.4 s
+  [  6/30] scene  7: reached        err    0.4 cm | t  29.6 s
+  [  7/30] scene  6: reached        err    0.3 cm | t  32.8 s
+  [  8/30] scene  8: reached        err    0.3 cm | t  33.5 s
+  [  9/30] scene  9: reached        err    0.4 cm | t  31.6 s
+  [ 10/30] scene 10: reached        err    0.2 cm | t  36.6 s
+  [ 11/30] scene  1: timeout        err   30.7 cm | t  90.0 s
+  [ 12/30] scene 11: reached        err    0.4 cm | t  27.9 s
+  [ 13/30] scene 12: reached        err    0.3 cm | t  29.8 s
+  [ 14/30] scene 14: reached        err    0.4 cm | t  28.4 s
+  [ 15/30] scene 13: reached        err    0.4 cm | t  35.0 s
+  [ 16/30] scene 15: reached        err    0.3 cm | t  30.5 s
+  [ 17/30] scene 16: reached        err    0.3 cm | t  30.2 s
+  [ 18/30] scene 18: crashed_base   err   28.4 cm | t  33.1 s
+  [ 19/30] scene 17: reached        err    0.3 cm | t  39.7 s
+  [ 20/30] scene 19: reached        err    0.3 cm | t  35.7 s
+  [ 21/30] scene 20: reached        err    0.3 cm | t  36.0 s
+  [ 22/30] scene 21: reached        err    0.3 cm | t  41.4 s
+  [ 23/30] scene 22: reached        err    0.4 cm | t  32.3 s
+  [ 24/30] scene 23: reached        err    0.1 cm | t  32.5 s
+  [ 25/30] scene 24: reached        err    0.2 cm | t  37.7 s
+  [ 26/30] scene 26: reached        err    0.9 cm | t  30.3 s
+  [ 27/30] scene 25: reached        err    0.3 cm | t  35.6 s
+  [ 28/30] scene 28: reached        err    0.2 cm | t  33.9 s
+  [ 29/30] scene 29: reached        err    0.4 cm | t  48.0 s
+  [ 30/30] scene 27: reached        err    0.0 cm | t  63.3 s
+  -> success 93% | median final error 0.3 cm | time to reach 34.4 s | {'reached': 28, 'timeout': 1, 'crashed_base': 1} | 5.4 min
+
+driver_A_s1_expert_hold5: tier 12, 30 scenes
+  [  1/30] scene  4: reached        err    0.5 cm | t  42.0 s
+  [  2/30] scene  1: reached        err    0.2 cm | t  46.3 s
+  [  3/30] scene  2: reached        err    0.4 cm | t  49.7 s
+  [  4/30] scene  3: reached        err    0.3 cm | t  49.0 s
+  [  5/30] scene  0: reached        err    0.4 cm | t  50.4 s
+  [  6/30] scene  5: timeout        err   14.3 cm | t  90.0 s
+  [  7/30] scene  6: reached        err    0.3 cm | t  46.5 s
+  [  8/30] scene  7: reached        err    0.3 cm | t  47.1 s
+  [  9/30] scene  9: reached        err    0.4 cm | t  47.0 s
+  [ 10/30] scene  8: reached        err    0.3 cm | t  53.9 s
+  [ 11/30] scene 10: reached        err    0.0 cm | t  82.0 s
+  [ 12/30] scene 11: reached        err    0.4 cm | t  51.3 s
+  [ 13/30] scene 12: reached        err    0.3 cm | t  52.6 s
+  [ 14/30] scene 15: crashed_base   err   15.9 cm | t  44.1 s
+  [ 15/30] scene 13: crashed_base   err    2.3 cm | t  78.4 s
+  [ 16/30] scene 14: timeout        err   23.9 cm | t  90.0 s
+  [ 17/30] scene 17: reached        err    0.3 cm | t  45.3 s
+  [ 18/30] scene 19: reached        err    0.3 cm | t  40.3 s
+  [ 19/30] scene 18: crashed_base   err    4.2 cm | t  42.6 s
+  [ 20/30] scene 16: reached        err    0.2 cm | t  73.2 s
+  [ 21/30] scene 20: reached        err    0.2 cm | t  46.6 s
+  [ 22/30] scene 24: reached        err    0.2 cm | t  41.5 s
+  [ 23/30] scene 21: reached        err    0.3 cm | t  50.7 s
+  [ 24/30] scene 23: reached        err    0.3 cm | t  54.5 s
+  [ 25/30] scene 25: reached        err    0.3 cm | t  44.3 s
+  [ 26/30] scene 22: reached        err    0.3 cm | t  89.9 s
+  [ 27/30] scene 27: reached        err    0.3 cm | t  51.0 s
+  [ 28/30] scene 28: reached        err    0.4 cm | t  47.4 s
+  [ 29/30] scene 26: reached        err    0.0 cm | t  75.0 s
+  [ 30/30] scene 29: reached        err    0.4 cm | t  54.4 s
+  -> success 83% | median final error 0.3 cm | time to reach 53.3 s | {'reached': 25, 'timeout': 2, 'crashed_base': 3} | 7.0 min
+
+driver_A_s1_expert_hold5: tier 13, 30 scenes
+  [  1/30] scene  4: reached        err    0.2 cm | t  33.5 s
+  [  2/30] scene  2: reached        err    0.3 cm | t  34.7 s
+  [  3/30] scene  0: reached        err    0.3 cm | t  35.6 s
+  [  4/30] scene  3: reached        err    0.3 cm | t  38.2 s
+  [  5/30] scene  1: reached        err    0.3 cm | t  37.2 s
+  [  6/30] scene  5: reached        err    0.3 cm | t  36.9 s
+  [  7/30] scene  6: reached        err    0.2 cm | t  38.0 s
+  [  8/30] scene  7: reached        err    0.0 cm | t  38.1 s
+  [  9/30] scene  8: reached        err    0.3 cm | t  37.9 s
+  [ 10/30] scene 11: reached        err    0.3 cm | t  40.5 s
+  [ 11/30] scene 10: reached        err    0.2 cm | t  42.7 s
+  [ 12/30] scene  9: reached        err    0.0 cm | t  57.8 s
+  [ 13/30] scene 12: reached        err    0.2 cm | t  35.2 s
+  [ 14/30] scene 14: reached        err    0.4 cm | t  35.8 s
+  [ 15/30] scene 13: reached        err    0.3 cm | t  38.3 s
+  [ 16/30] scene 16: reached        err    0.3 cm | t  39.2 s
+  [ 17/30] scene 17: reached        err    0.4 cm | t  38.6 s
+  [ 18/30] scene 15: reached        err    0.0 cm | t  64.3 s
+  [ 19/30] scene 19: reached        err    0.4 cm | t  31.3 s
+  [ 20/30] scene 20: reached        err    0.1 cm | t  37.5 s
+  [ 21/30] scene 21: reached        err    0.2 cm | t  36.5 s
+  [ 22/30] scene 22: reached        err    0.3 cm | t  36.7 s
+  [ 23/30] scene 23: reached        err    0.1 cm | t  34.0 s
+  [ 24/30] scene 26: reached        err    0.4 cm | t  35.2 s
+  [ 25/30] scene 18: reached_not_held err    3.4 cm | t  90.0 s
+  [ 26/30] scene 24: reached        err    0.2 cm | t  64.6 s
+  [ 27/30] scene 27: reached        err    0.2 cm | t  37.0 s
+  [ 28/30] scene 28: reached        err    0.4 cm | t  38.8 s
+  [ 29/30] scene 29: reached        err    0.3 cm | t  39.1 s
+  [ 30/30] scene 25: timeout        err    6.4 cm | t  90.0 s
+  -> success 93% | median final error 0.3 cm | time to reach 39.8 s | {'reached': 28, 'reached_not_held': 1, 'timeout': 1} | 5.4 min
+
+driver_A_s1_expert_hold5: tier 14, 30 scenes
+  [  1/30] scene  2: reached        err    0.4 cm | t  37.5 s
+  [  2/30] scene  1: reached        err    0.3 cm | t  38.5 s
+  [  3/30] scene  3: reached        err    0.4 cm | t  39.8 s
+  [  4/30] scene  4: reached        err    0.1 cm | t  40.2 s
+  [  5/30] scene  0: reached        err    0.4 cm | t  41.2 s
+  [  6/30] scene  5: reached        err    0.1 cm | t  65.4 s
+  [  7/30] scene  6: reached        err    0.3 cm | t  38.7 s
+  [  8/30] scene  8: reached        err    0.3 cm | t  36.7 s
+  [  9/30] scene  9: reached        err    0.4 cm | t  38.5 s
+  [ 10/30] scene 10: reached        err    0.3 cm | t  38.5 s
+  [ 11/30] scene  7: reached        err    0.1 cm | t  64.3 s
+  [ 12/30] scene 13: reached        err    0.2 cm | t  36.8 s
+  [ 13/30] scene 11: reached        err    0.1 cm | t  64.0 s
+  [ 14/30] scene 16: reached        err    0.2 cm | t  37.3 s
+  [ 15/30] scene 14: reached        err    0.2 cm | t  65.1 s
+  [ 16/30] scene 12: reached        err    0.1 cm | t  73.0 s
+  [ 17/30] scene 17: reached        err    0.3 cm | t  39.7 s
+  [ 18/30] scene 15: timeout        err   21.2 cm | t  90.0 s
+  [ 19/30] scene 18: reached        err    0.5 cm | t  40.3 s
+  [ 20/30] scene 20: reached        err    0.3 cm | t  37.7 s
+  [ 21/30] scene 21: reached        err    0.4 cm | t  41.9 s
+  [ 22/30] scene 22: reached        err    0.2 cm | t  36.8 s
+  [ 23/30] scene 19: reached        err    0.1 cm | t  63.1 s
+  [ 24/30] scene 23: reached        err    0.3 cm | t  40.4 s
+  [ 25/30] scene 24: reached        err    0.2 cm | t  37.0 s
+  [ 26/30] scene 25: reached        err    0.3 cm | t  35.9 s
+  [ 27/30] scene 27: reached        err    0.4 cm | t  38.1 s
+  [ 28/30] scene 28: reached        err    0.3 cm | t  37.4 s
+  [ 29/30] scene 29: reached        err    0.3 cm | t  38.5 s
+  [ 30/30] scene 26: reached        err    0.1 cm | t  64.1 s
+  -> success 97% | median final error 0.3 cm | time to reach 45.0 s | {'reached': 29, 'timeout': 1} | 5.9 min

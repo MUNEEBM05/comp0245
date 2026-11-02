@@ -1,0 +1,12 @@
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+cam_driver_A_expert_test
+  blocked    n= 30 reached  22 held  22 {'timeout': 7, 'reached': 22, 'crashed_base': 1}
+  clear      n= 30 reached  30 held  29 {'reached': 29, 'crashed_base': 1}
+  cluttered  n= 30 reached  15 held  13 {'reached': 13, 'timeout': 12, 'reached_not_held': 2, 'crashed_base': 3}
+  gap        n= 30 reached  23 held  23 {'reached': 23, 'timeout': 6, 'crashed_base': 1}
+  sparse     n= 30 reached  23 held  23 {'reached': 23, 'crashed_base': 4, 'timeout': 3}
+  ALL        n=150 reached 113 held 110 {'reached': 110, 'crashed_base': 10, 'timeout': 28, 'reached_not_held': 2}
+  drift at park 31.0 cm | target error before camera 2.7 cm, after 0.2 cm | camera saw target at park 118/150 | found on start spin 0/150

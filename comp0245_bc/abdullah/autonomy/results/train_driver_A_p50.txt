@@ -1,0 +1,2 @@
+driver_A_p50: 653353 training rows from [('auto_teacher', 150, 300), ('auto_teacher_nudged', 49, 100)], 123393 validation rows, 53 inputs
+  validation error 0.067 rad/s per wheel | best epoch 11 of 17 | saved /home/ubuntu/ML for Robotics/Lab1/comp0245/comp0245_bc/autonomy/trained/driver_A_p50.npz (45 s)

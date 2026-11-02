@@ -1,0 +1,2 @@
+driver_B_s1: 1300967 training rows from [('auto_teacher', 300, 300), ('auto_teacher_nudged', 98, 100)], 123393 validation rows, 47 inputs
+  validation error 0.132 rad/s per wheel | best epoch 10 of 16 | saved /home/ubuntu/ML for Robotics/Lab1/comp0245/comp0245_bc/autonomy/trained/driver_B_s1.npz (419 s)

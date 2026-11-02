@@ -1,0 +1,10 @@
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+cam_planner_expert_val
+  blocked    n=  8 reached   8 held   8 {'reached': 8}
+  clear      n=  8 reached   8 held   8 {'reached': 8}
+  cluttered  n=  8 reached   5 held   4 {'reached': 4, 'crashed_obstacle': 1, 'crashed_base': 2, 'timeout': 1}
+  gap        n=  8 reached   8 held   6 {'reached': 6, 'reached_not_held': 1, 'crashed_base': 1}
+  sparse     n=  8 reached   8 held   7 {'reached': 7, 'crashed_base': 1}
+  ALL        n= 40 reached  37 held  33 {'reached': 33, 'crashed_base': 4, 'crashed_obstacle': 1, 'timeout': 1, 'reached_not_held': 1}
+  drift at park 42.2 cm | target error before camera 1.2 cm, after 0.2 cm | camera saw target at park 35/40 | found on start spin 0/40

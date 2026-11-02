@@ -1,0 +1,12 @@
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+odo_planner_expert_test
+  blocked    n= 30 reached   0 held   0 {'timeout': 30}
+  clear      n= 30 reached   0 held   0 {'timeout': 30}
+  cluttered  n= 30 reached   0 held   0 {'timeout': 23, 'crashed_obstacle': 5, 'crashed_base': 2}
+  gap        n= 30 reached   0 held   0 {'timeout': 30}
+  sparse     n= 30 reached   0 held   0 {'timeout': 30}
+  ALL        n=150 reached   0 held   0 {'timeout': 143, 'crashed_obstacle': 5, 'crashed_base': 2}
+  drift at park 29.3 cm | target error before camera 29.0 cm, after nan cm | camera saw target at park 0/150 | found on start spin 0/150

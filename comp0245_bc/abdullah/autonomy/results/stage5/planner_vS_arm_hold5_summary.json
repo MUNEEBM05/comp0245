@@ -1,0 +1,71 @@
+{
+ "10": {
+  "scenes": 30,
+  "success_rate": 0.7333333333333333,
+  "median_final_err_cm": 0.33,
+  "mean_time_to_reach_s": 23.454181818181823,
+  "torque_jerk": 0.15165333333333333,
+  "wheel_jerk": 0.004443333333333333,
+  "think_us_per_step": 801.31,
+  "outcomes": {
+   "reached": 22,
+   "timeout": 6,
+   "crashed_base": 2
+  }
+ },
+ "11": {
+  "scenes": 30,
+  "success_rate": 0.8,
+  "median_final_err_cm": 0.255,
+  "mean_time_to_reach_s": 35.57595833333333,
+  "torque_jerk": 0.21361999999999998,
+  "wheel_jerk": 0.015989999999999997,
+  "think_us_per_step": 839.6666666666667,
+  "outcomes": {
+   "reached": 24,
+   "timeout": 4,
+   "crashed_base": 2
+  }
+ },
+ "12": {
+  "scenes": 30,
+  "success_rate": 0.8,
+  "median_final_err_cm": 0.325,
+  "mean_time_to_reach_s": 49.246541666666666,
+  "torque_jerk": 0.23448333333333332,
+  "wheel_jerk": 0.01618333333333333,
+  "think_us_per_step": 890.3633333333333,
+  "outcomes": {
+   "reached": 24,
+   "timeout": 2,
+   "crashed_base": 4
+  }
+ },
+ "13": {
+  "scenes": 30,
+  "success_rate": 0.9666666666666667,
+  "median_final_err_cm": 0.275,
+  "mean_time_to_reach_s": 39.42927586206896,
+  "torque_jerk": 0.22633,
+  "wheel_jerk": 0.01466,
+  "think_us_per_step": 905.85,
+  "outcomes": {
+   "reached": 29,
+   "timeout": 1
+  }
+ },
+ "14": {
+  "scenes": 30,
+  "success_rate": 0.9333333333333333,
+  "median_final_err_cm": 0.25,
+  "mean_time_to_reach_s": 39.43671428571429,
+  "torque_jerk": 0.23023333333333337,
+  "wheel_jerk": 0.016753333333333332,
+  "think_us_per_step": 970.19,
+  "outcomes": {
+   "timeout": 1,
+   "reached": 28,
+   "crashed_base": 1
+  }
+ }
+}
