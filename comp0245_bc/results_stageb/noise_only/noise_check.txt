@@ -1,0 +1,50 @@
+      d_left_100ms    8.31   <-- mostly noise
+         dq7_100ms    5.83   <-- mostly noise
+         dq5_100ms    3.34   <-- mostly noise
+         dq1_100ms    3.06   <-- mostly noise
+         dq3_100ms    3.05   <-- mostly noise
+         dq4_100ms    2.49   <-- mostly noise
+       d_fwd_100ms    2.40   <-- mostly noise
+         dq2_100ms    2.16   <-- mostly noise
+         dq6_100ms    2.06   <-- mostly noise
+      d_left_500ms    1.74   <-- mostly noise
+                q7    1.62   <-- mostly noise
+               qd1    1.51   <-- mostly noise
+               qd7    1.49   <-- mostly noise
+               qd5    1.43   <-- mostly noise
+               qd2    1.29   <-- mostly noise
+               qd4    1.28   <-- mostly noise
+               qd3    1.00   <-- mostly noise
+               qd6    0.82   <-- mostly noise
+       d_yaw_100ms    0.61   <-- mostly noise
+       d_fwd_500ms    0.48   <-- mostly noise
+                q1    0.28
+                q5    0.23
+                q3    0.20
+                q6    0.15
+                q4    0.13
+       d_yaw_500ms    0.13
+                q2    0.09
+         goal_left    0.07
+          tgt_left    0.06
+          goal_fwd    0.04
+      face_err_sin    0.04
+         goal_dist    0.04
+            base_x    0.04
+            base_y    0.04
+           tgt_fwd    0.04
+           cos_yaw    0.02
+      face_err_cos    0.02
+           sin_yaw    0.02
+   err_avg_x_500ms    0.00
+   err_avg_y_500ms    0.00
+   err_avg_z_500ms    0.00
+  err_avg_x_2000ms    0.00
+             err_x    0.00
+             tgt_y    0.00
+             tgt_x    0.00
+             tgt_z    0.00
+             err_z    0.00
+             err_y    0.00
+  err_avg_y_2000ms    0.00
+  err_avg_z_2000ms    0.00

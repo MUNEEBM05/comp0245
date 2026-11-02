@@ -220,14 +220,27 @@ def lidar_sectors(dist, ang, yaw):
 
 
 def run_xy_full(arrays, history=False, goal=False, integral=False, action="torque", wheel_vel=False, ik=False,
-                lidar=False):
+                lidar=False, smooth=None, smooth_qd=True):
     """Inputs and outputs with all optional groups.
 
     action="torque":    outputs = 7 arm torques + 4 wheel speeds (the brief's outputs)
     action="reference": outputs = 7 arm reference offsets (q_ref - q) + 7 reference speeds + 4 wheel speeds;
                         a fixed PD law (the template's Kp=100, Kd=30, plus gravity) turns them into torques.
+    smooth=tau:         arm speeds and history built from readings smoothed over ~tau seconds (model M)
+    smooth_qd=False:    with smooth, keep the arm speeds raw and smooth only the history (model M2)
     """
-    X, Y = run_xy(arrays, history=history, goal=goal)
+    if smooth:   # model M: arm speeds and history from smoothed readings, positions stay raw
+        sm = smooth_run(arrays, smooth)
+        # M2 keeps the arm speeds raw: they are the arm's brake, and a lagged brake makes it swing
+        X, Y = run_to_xy(dict(arrays, qd_mes=sm["qd_mes"]) if smooth_qd else arrays)
+        parts = [X]
+        if history:
+            parts.append(run_history(sm))
+        if goal:
+            parts.append(goal_features(arrays["base_pos"], arrays["base_bearing"], arrays["target"]))
+        X = np.column_stack(parts)
+    else:
+        X, Y = run_xy(arrays, history=history, goal=goal)
     if integral:
         X = np.column_stack([X, run_integral(arrays)])
     if wheel_vel:   # measured wheel speeds (qd_mes 0-3): risk of the "copycat" shortcut, tested as an ablation
@@ -255,3 +268,46 @@ def feature_names_full(history=False, goal=False, integral=False, wheel_vel=Fals
     from ik_features import IK_NAMES
     return (feature_names(history, goal) + (INTEGRAL_NAMES if integral else [])
             + (WHEEL_VEL_NAMES if wheel_vel else []) + (IK_NAMES if ik else []) + (LIDAR_NAMES if lidar else []))
+
+
+# ------------------------------------------------------------------------------------------
+# Smoothed inputs (--smooth, model M): under sensor noise the arm speeds and the 0.1 s history
+# changes are mostly noise (noise_check.py). M feeds the network smoothed versions instead:
+# base position, heading, arm angles and arm speeds are exponentially averaged over the last
+# ~tau seconds, and the speeds and history are built from those. Positions stay raw (noise is
+# small next to them, and smoothing would only add lag).
+# M crashed even on clean scenes: the network brakes the arm with the speed inputs, and a 50 ms
+# old speed brakes at the wrong moment. M2 (smooth_qd=False) smooths only the history.
+# ------------------------------------------------------------------------------------------
+SMOOTH_TAU_S = 0.05
+
+
+class Smoother:
+    """Streaming version (for driving): call update(...) every 10 ms with the raw readings."""
+
+    def __init__(self, tau=SMOOTH_TAU_S, dt=0.01):
+        self.k = 1.0 - np.exp(-dt / tau)
+        self.s = None
+
+    def update(self, base_pos, yaw, q, qd):
+        new = [np.array(base_pos, float), float(yaw), np.array(q, float), np.array(qd, float)]
+        if self.s is None:
+            self.s = new
+        else:
+            bp, yw, qq, qv = self.s
+            self.s = [bp + self.k * (new[0] - bp),
+                      _wrap(yw + self.k * _wrap(new[1] - yw)),   # the short way round past +-180 deg
+                      qq + self.k * (new[2] - qq),
+                      qv + self.k * (new[3] - qv)]
+        return self.s
+
+
+def smooth_run(arrays, tau=SMOOTH_TAU_S, log_dt=0.01):
+    """Copy of a recorded run with base position, heading, arm angles and speeds smoothed."""
+    sm = Smoother(tau, log_dt)
+    rows = [sm.update(*r) for r in zip(arrays["base_pos"], arrays["base_bearing"],
+                                       arrays["q_mes"], arrays["qd_mes"])]
+    out = dict(arrays)
+    for i, key in enumerate(["base_pos", "base_bearing", "q_mes", "qd_mes"]):
+        out[key] = np.array([r[i] for r in rows])
+    return out

@@ -5,6 +5,10 @@
     python train.py --name linear_v1 --model linear                  # same setup, linear regression
     python train.py --name final --history deltas --goal --separate --reach-weight 3 --integral \
                     --extra-train data/runs_nudged data/runs_reach data/runs_kick     # the final model (K)
+    python train.py --name vM_smooth --history deltas --goal --separate --reach-weight 3 --integral --smooth 0.05 \
+                    --extra-train data/runs_nudged data/runs_reach data/runs_kick data/runs_disturbed   # M
+    python train.py --name vM2_smooth_hist --history deltas --goal --separate --reach-weight 3 --integral --smooth 0.05 \
+                    --smooth-history-only --extra-train data/runs_nudged data/runs_reach data/runs_kick data/runs_disturbed  # M2
 
 Every design choice from the report is a switch here, so any version of the ladder can be rebuilt:
     --torque minus_gravity|raw   learn only the torque left over after gravity (physics supplies gravity,
@@ -19,6 +23,10 @@ Every design choice from the report is a switch here, so any version of the ladd
     --model mlp|linear|forest    the learner (forest = scikit-learn random forest, saved as .pkl)
     --wheel-vel                  ablation: add measured wheel speeds as inputs (causes the copycat shortcut)
     --action torque|reference    ablation: predict torques (the brief) or an arm reference for a fixed PD
+    --smooth TAU                 build the arm speeds and history from readings smoothed over ~TAU s
+                                 (model M: stops sensor noise swamping those inputs; see noise_check.py)
+    --smooth-history-only        with --smooth, keep the arm speeds raw and smooth only the history (model M2:
+                                 the speeds are the arm's brake, and M's lagged speeds made the arm swing and crash)
 
 MLP training needs PyTorch (in RoboEnv: pixi run -e ml python train.py ...). Linear / forest do not.
 Inputs and outputs are standardised with TRAINING statistics; the scaling, the input ranges and the
@@ -62,7 +70,8 @@ def run_data(arrays, a):
     """
     X, Y = run_xy_full(arrays, history=a.history == "deltas", goal=a.goal, integral=a.integral, action=a.action,
                        wheel_vel=a.wheel_vel, ik=getattr(a, "ik", False),
-                       lidar=getattr(a, "lidar", False))
+                       lidar=getattr(a, "lidar", False), smooth=getattr(a, "smooth", None),
+                       smooth_qd=not getattr(a, "smooth_history_only", False))
     if getattr(a, "relative", False):
         X = np.delete(X, ABSOLUTE_IDX, axis=1)
     if getattr(a, "drop", None):    # ablation: leave out every input whose name starts with one of these
@@ -217,6 +226,11 @@ def main():
     ap.add_argument("--action", choices=["torque", "reference"], default="torque",
                     help="torque: the model outputs arm torques (the brief). reference: the model outputs where "
                          "the arm should go, and the template's PD law makes the torque (ask the lecturer first)")
+    ap.add_argument("--smooth", type=float, default=None,
+                    help="model M: build arm speeds and history from readings smoothed over ~this many "
+                         "seconds (e.g. 0.05); off by default")
+    ap.add_argument("--smooth-history-only", action="store_true",
+                    help="model M2: with --smooth, keep the arm speeds raw and smooth only the history")
     ap.add_argument("--separate", action="store_true",
                     help="train separate networks for the arm and the wheels (variant B)")
     ap.add_argument("--reach-weight", type=float, default=1.0,
@@ -306,7 +320,8 @@ def main():
         names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel, a.ik, a.lidar)
         meta = {"name": a.name, "model": "forest", "torque": a.torque, "history_features": a.history,
                 "goal_features": a.goal, "integral_features": a.integral, "action": a.action,
-                "wheel_vel_features": a.wheel_vel, "separate": False, "groups": ["all"],
+                "wheel_vel_features": a.wheel_vel, "smooth": a.smooth, "smooth_qd": not a.smooth_history_only,
+                "separate": False, "groups": ["all"],
                 "feature_names": names, "output_names": output_names(a.action), "trees": a.trees,
                 "max_depth": a.max_depth, "val_mse_standardised": val_mse,
                 "val_mae": dict(zip(output_names(a.action), map(float, mae))), "train_rows": int(len(Xtr)),
@@ -372,6 +387,7 @@ def main():
             "goal_features": a.goal, "integral_features": a.integral, "action": a.action,
             "wheel_vel_features": a.wheel_vel, "ik_features": a.ik, "lidar_features": a.lidar, "relative": a.relative,
             "keep_unreachable": a.keep_unreachable, "dropped": a.drop, "aug_noise": a.aug_noise, "weight_decay": a.weight_decay, "dropout": a.dropout, "pca": a.pca,
+            "smooth": a.smooth, "smooth_qd": not a.smooth_history_only,
             "separate": a.separate, "reach_weight": a.reach_weight, "hold_weight": a.hold_weight,
             "groups": list(groups), "feature_names": names,
             "output_names": OUTPUT_NAMES, "hidden": a.hidden if a.model == "mlp" else [],

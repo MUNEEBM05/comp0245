@@ -30,7 +30,7 @@ from expert_episode import (  # also imports the simulator quietly
     ARM, ARM_REACH_LIMIT, BASE_NAV_TIMEOUT, CONF_FILE_NAME, FIRST_CHECKED_ARM_JOINT, FIXED_FINGER_ANGLES,
     REACH_TOLERANCE, STANDOFF_POINTS, STANDOFF_Z_POINTS, MotorCommands, PinWrapper, p, pb, pin,
 )
-from features import HISTORY_LAGS_S, ErrorAverager, goal_features, history_features, make_features
+from features import HISTORY_LAGS_S, ErrorAverager, Smoother, goal_features, history_features, make_features
 from quiet import quiet_native
 from robotnik_arm_control import (
     ArmControllerParams, BaseControllerParams, BaseNavState, arm_controller, base_controller,
@@ -320,6 +320,8 @@ class MLPPolicy:
                 names = [n for n in names if n not in ABSOLUTE_NAMES]
             self.drop_idx = [i for i, n in enumerate(names) if any(n.startswith(p) for p in meta["dropped"])]
         self.action = meta.get("action", "torque")
+        self.smooth = meta.get("smooth")    # model M: filter window in seconds (None for older models)
+        self.smooth_qd = meta.get("smooth_qd", True)   # False = model M2: arm speeds stay raw (M has no entry)
         self.arm_params = ArmControllerParams(reach_limit=ARM_REACH_LIMIT)   # same Kp, Kd as the expert
 
     def reset(self, world, target):
@@ -336,15 +338,16 @@ class MLPPolicy:
         if getattr(self, "ik", False):
             from ik_features import IKAverager
             self.ik_avg, self.ik_now = IKAverager(0.01), None
+        self.smoother = Smoother(self.smooth, 0.01) if self.smooth else None
+        self.sm_now = None
 
-    def _history(self, obs):
+    def _history(self, base_pos, yaw, q):
         """History inputs: how the base and arm moved over the last 0.1 s and 0.5 s."""
         if self.k % self.sample_every == 0:
-            self.buf.append((obs["base_pos"].copy(), float(obs["base_bearing"]), obs["q_mes"].copy()))
+            self.buf.append((np.array(base_pos, float), float(yaw), np.array(q, float)))
         lags = [min(int(round(l / 0.01)), len(self.buf) - 1) for l in HISTORY_LAGS_S]
         past = [self.buf[-1 - n] for n in lags]
-        return history_features(obs["base_pos"], obs["base_bearing"], obs["q_mes"],
-                                [p[0] for p in past], [p[1] for p in past], past[0][2])
+        return history_features(base_pos, yaw, q, [p[0] for p in past], [p[1] for p in past], past[0][2])
 
     def predict(self, X):
         """Raw model output in real units (Nm and rad/s) for one row of inputs."""
@@ -368,11 +371,20 @@ class MLPPolicy:
 
     def act(self, obs):
         """One control step: measurements + target -> (wheel speeds, arm torques)."""
+        # 0. Model M: the arm speeds and history use readings smoothed every 10 ms, exactly as in
+        #    training (features.smooth_run); every other input uses the raw readings.
+        #    Model M2 smooths only the history: the arm speeds stay raw (they are the arm's brake).
+        bp, yaw, q, qd = obs["base_pos"], obs["base_bearing"], obs["q_mes"], obs["qd_mes"]
+        if self.smoother is not None:
+            if self.k % self.sample_every == 0:
+                self.sm_now = self.smoother.update(bp, yaw, q, qd)
+            bp, yaw, q, qd = self.sm_now
+
         # 1. Build the input row, group by group, in the same order as train.py
-        X = make_features(obs["base_pos"], obs["base_bearing"], obs["q_mes"], obs["qd_mes"],
-                          obs["ee_pos"], self.target)
+        X = make_features(obs["base_pos"], obs["base_bearing"], obs["q_mes"],
+                          qd if self.smooth_qd else obs["qd_mes"], obs["ee_pos"], self.target)
         if self.history:
-            X = np.column_stack([X, self._history(obs)])
+            X = np.column_stack([X, self._history(bp, yaw, q)])
         if self.goal:
             X = np.column_stack([X, goal_features(obs["base_pos"], obs["base_bearing"], self.target)])
         if self.integral:
