@@ -1,0 +1,11 @@
+base_path_m,final_err_cm,index,min_err_cm,outcome,policy,seed,success,think_us_per_step,tier,time_s,torque_jerk,wheel_jerk
+3.874,17.78,0,7.18,timeout,mlp_v0_mlp_wheels,1010000,False,232.1,1,40.0,0.5763,0.125
+1.128,1.0,1,1.0,reached,mlp_v0_mlp_wheels,1010001,True,214.3,1,12.144,0.612,0.1211
+1.321,1.0,2,1.0,reached,mlp_v0_mlp_wheels,1010002,True,219.1,1,8.287,0.2627,0.0447
+7.869,152.6,3,13.64,timeout,mlp_v0_mlp_wheels,1010003,False,229.6,1,40.0,0.5542,0.1283
+4.154,13.35,4,7.45,timeout,mlp_v0_mlp_wheels,1010004,False,225.2,1,40.0,0.5076,0.103
+1.675,1.0,5,1.0,reached,mlp_v0_mlp_wheels,1010005,True,210.0,1,11.732,0.3393,0.0985
+1.329,11.03,6,11.03,crashed_base,mlp_v0_mlp_wheels,1010006,False,199.2,1,19.18,0.5804,0.1579
+0.968,1.0,7,1.0,reached,mlp_v0_mlp_wheels,1010007,True,227.7,1,13.877,0.696,0.1374
+0.998,1.0,8,1.0,reached,mlp_v0_mlp_wheels,1010008,True,217.4,1,11.244,0.5623,0.0755
+1.373,1.0,9,1.0,reached,mlp_v0_mlp_wheels,1010009,True,212.0,1,9.958,0.3218,0.0805

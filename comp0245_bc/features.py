@@ -202,8 +202,25 @@ def run_integral(arrays, log_dt=0.01):
 
 WHEEL_VEL_NAMES = ["wheel_vel_fr", "wheel_vel_fl", "wheel_vel_bl", "wheel_vel_br"]
 
+# LiDAR inputs (student of the expert + navigation layer): the 180-ray LiDAR ring summarised as the closest hit
+# in each of 24 slices of 15 deg, seen from the robot (slice 0 = straight behind, slice 12 = straight ahead,
+# counting anticlockwise). Nothing within range = 4.0 m. Recordings without obstacles (all the original expert
+# runs) get 4.0 everywhere, which is exactly what the LiDAR would have read there.
+LIDAR_SECTORS, LIDAR_RANGE = 24, 4.0
+LIDAR_NAMES = [f"lidar_{i}" for i in range(LIDAR_SECTORS)]
 
-def run_xy_full(arrays, history=False, goal=False, integral=False, action="torque", wheel_vel=False, ik=False):
+
+def lidar_sectors(dist, ang, yaw):
+    """180 world-frame ray distances (inf = no hit) -> 24 robot-frame slice minima, capped at 4 m."""
+    rel = (np.asarray(ang) - yaw + np.pi) % (2 * np.pi)
+    idx = np.minimum((rel / (2 * np.pi / LIDAR_SECTORS)).astype(int), LIDAR_SECTORS - 1)
+    out = np.full(LIDAR_SECTORS, LIDAR_RANGE)
+    np.minimum.at(out, idx, np.minimum(np.asarray(dist, float), LIDAR_RANGE))
+    return out
+
+
+def run_xy_full(arrays, history=False, goal=False, integral=False, action="torque", wheel_vel=False, ik=False,
+                lidar=False):
     """Inputs and outputs with all optional groups.
 
     action="torque":    outputs = 7 arm torques + 4 wheel speeds (the brief's outputs)
@@ -218,6 +235,9 @@ def run_xy_full(arrays, history=False, goal=False, integral=False, action="torqu
     if ik:          # the joint speeds the arm's geometry asks for (see ik_features.py)
         from ik_features import run_ik
         X = np.column_stack([X, run_ik(arrays)]).astype(np.float32)
+    if lidar:       # LiDAR slices (recorded on obstacle runs; open space = 4 m on runs without obstacles)
+        L = arrays["lidar"] if "lidar" in arrays else np.full((len(X), LIDAR_SECTORS), LIDAR_RANGE)
+        X = np.column_stack([X, L]).astype(np.float32)
     if action == "reference":
         q = arrays["q_mes"][:, ARM]
         Y = np.column_stack([arrays["q_des_arm"] - q, arrays["qd_des_arm"], arrays["wheel_cmds"]]).astype(np.float32)
@@ -231,7 +251,7 @@ def output_names(action="torque"):
     return OUTPUT_NAMES
 
 
-def feature_names_full(history=False, goal=False, integral=False, wheel_vel=False, ik=False):
+def feature_names_full(history=False, goal=False, integral=False, wheel_vel=False, ik=False, lidar=False):
     from ik_features import IK_NAMES
     return (feature_names(history, goal) + (INTEGRAL_NAMES if integral else [])
-            + (WHEEL_VEL_NAMES if wheel_vel else []) + (IK_NAMES if ik else []))
+            + (WHEEL_VEL_NAMES if wheel_vel else []) + (IK_NAMES if ik else []) + (LIDAR_NAMES if lidar else []))

@@ -1,0 +1,17 @@
+{
+ "components_for": {
+  "80%": 15,
+  "90%": 21,
+  "95%": 25,
+  "99%": 36
+ },
+ "k95": 25,
+ "share_of_each_group_kept_at_k95": {
+  "IK direction now": 0.9612442851066589,
+  "IK averages": 0.9661487340927124,
+  "hand error": 0.9638263583183289,
+  "joint speeds": 0.9758738279342651,
+  "joint angles": 0.9608188271522522,
+  "parking spot": 0.894755482673645
+ }
+}

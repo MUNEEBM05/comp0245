@@ -1,0 +1,11 @@
+base_path_m,face_err_end_deg,final_err_cm,goal_dist_end_m,index,min_err_cm,outcome,policy,seed,success,think_us_per_step,tier,time_s,torque_jerk,wheel_jerk,wheels_end,yaw_rate_end
+1.547,0.6,3.78,0.075,0,1.06,timeout,vE_integral,1010000,False,337.1,1,40.0,0.1091,0.0058,0.01,0.0
+1.094,0.2,1.0,0.029,1,1.0,reached,vE_integral,1010001,True,333.5,1,34.663,0.1147,0.0051,0.007,0.0
+1.326,0.6,1.0,0.07,2,1.0,reached,vE_integral,1010002,True,337.4,1,8.835,0.2769,0.0306,0.006,0.007
+0.967,0.6,1.0,0.036,3,1.0,reached,vE_integral,1010003,True,344.6,1,30.486,0.115,0.0063,0.005,0.0
+1.571,1.8,1.58,0.027,4,1.08,timeout,vE_integral,1010004,False,356.5,1,40.0,0.1076,0.0059,0.005,0.0
+1.745,0.2,2.11,0.121,5,1.17,timeout,vE_integral,1010005,False,368.2,1,40.0,0.0792,0.0058,0.007,0.0
+0.949,0.4,6.32,0.136,6,2.26,timeout,vE_integral,1010006,False,349.2,1,40.0,0.0789,0.0059,0.012,0.0
+0.791,3.2,1.0,0.069,7,1.0,reached,vE_integral,1010007,True,323.6,1,7.922,0.4337,0.0281,0.092,0.033
+1.041,1.1,8.12,0.162,8,1.49,timeout,vE_integral,1010008,False,332.6,1,40.0,0.0964,0.004,0.005,0.0
+1.373,2.8,1.0,0.08,9,1.0,reached,vE_integral,1010009,True,319.7,1,15.382,0.1686,0.0085,0.006,0.0

@@ -86,7 +86,7 @@ def _classify_stop(message):
 def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz=100,
                 cmd_noise_std=0.0, noise_hold_s=0.3, nudge_when="always", kick_prob=0.0, kick_std=15.0,
                 use_gui=False, time_limit_s=None, obs_noise=0.0, delay_steps=0, floor_friction=1.0,
-                base_mass_scale=1.0, hold_s=0.0, hold_unreachable=False):
+                base_mass_scale=1.0, hold_s=0.0, hold_unreachable=False, motor_noise_std=0.0, payload_kg=0.0):
     """Run the expert once and (optionally) save the recording.
 
     Args:
@@ -118,6 +118,8 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         delay_steps:   commands reach the motors this many 1-ms steps late.
         floor_friction: floor friction coefficient (template: 1.0).
         base_mass_scale: the base's mass is multiplied by this (heavier / lighter robot).
+        motor_noise_std: arm motors deliver the command +/- this random error (N*m, held 20 ms), Stage B.
+        payload_kg:    an object of this mass in the hand that the robot model does not know about, Stage B.
         hold_s:        keep running (and recording) the expert this long AFTER it reaches the target, so the
                        data shows what to do once there: hold still. The template stops the instant it
                        arrives, so without this the model never sees a single "arrived, stay put" example.
@@ -141,6 +143,10 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
     try:
         sim.SetFloorFriction(float(floor_friction))
         rid = sim.bot[0].bot_pybullet
+        if payload_kg > 0:
+            names0 = [client.getJointInfo(rid, j)[1].decode() for j in range(client.getNumJoints(rid))]
+            hand = names0.index("robot_j2s7s300_joint_end_effector")
+            client.changeDynamics(rid, hand, mass=client.getDynamicsInfo(rid, hand)[0] + float(payload_kg))
         if base_mass_scale != 1.0:
             base_mass = client.getDynamicsInfo(rid, -1)[0]
             client.changeDynamics(rid, -1, mass=base_mass * float(base_mass_scale))
@@ -291,6 +297,13 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
                     sent[4:] = np.clip(sent[4:] + kick, -arm_params.max_torque, arm_params.max_torque)
                     kick_left -= 1
 
+            # --- Optional motor noise (Stage B): the arm motors deliver the command +/- an error ----
+            if motor_noise_std > 0:
+                if step % 20 == 0:
+                    motor_noise = noise_rng.normal(0.0, motor_noise_std, size=7)
+                sent = sent.copy()
+                sent[4:] = np.clip(sent[4:] + motor_noise, -arm_params.max_torque, arm_params.max_torque)
+
             # --- Optional command delay: the motors get the command from delay_steps ms ago -----
             if delay_steps > 0:
                 delay_line.append(sent)
@@ -426,6 +439,7 @@ def run_episode(target, start_pose, seed, out_path=None, max_steps=40000, log_hz
         "held": bool(hold_until is not None and hold_max_err < REACH_TOLERANCE),
         "first_reach_time": reach_time_first,
         "obs_noise": float(obs_noise), "delay_steps": int(delay_steps),
+        "motor_noise_std": float(motor_noise_std), "payload_kg": float(payload_kg),
         "floor_friction": float(floor_friction), "base_mass_scale": float(base_mass_scale),
         "kick_prob": float(kick_prob), "kick_std": float(kick_std), "n_kicks": int(kick_count),
         "max_steps": int(max_steps),

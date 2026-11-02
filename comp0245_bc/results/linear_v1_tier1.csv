@@ -1,0 +1,11 @@
+base_path_m,final_err_cm,index,min_err_cm,outcome,policy,seed,success,think_us_per_step,tier,time_s,torque_jerk,wheel_jerk
+1.941,122.5,0,107.58,crashed_base,linear_v1,1010000,False,80.0,1,7.23,0.4449,0.0707
+1.106,131.89,1,69.37,crashed_ground,linear_v1,1010001,False,81.1,1,9.0,0.2019,0.0359
+0.846,91.87,2,78.73,crashed_base,linear_v1,1010002,False,77.6,1,6.86,0.152,0.0267
+0.523,67.35,3,59.38,crashed_base,linear_v1,1010003,False,78.6,1,7.37,0.1801,0.0321
+0.929,199.49,4,111.33,crashed_ground,linear_v1,1010004,False,77.4,1,8.21,0.2641,0.0424
+0.967,117.9,5,108.38,crashed_base,linear_v1,1010005,False,79.0,1,5.71,0.1844,0.0319
+1.596,38.07,6,8.19,crashed_base,linear_v1,1010006,False,81.2,1,10.48,0.2458,0.0463
+1.118,61.59,7,18.53,crashed_base,linear_v1,1010007,False,81.2,1,12.39,0.1095,0.0238
+0.536,77.47,8,77.47,crashed_base,linear_v1,1010008,False,79.5,1,7.36,0.1458,0.0252
+2.58,181.2,9,47.07,crashed_ground,linear_v1,1010009,False,81.7,1,11.92,0.2828,0.0442

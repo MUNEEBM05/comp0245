@@ -1,0 +1,11 @@
+base_path_m,final_err_cm,index,min_err_cm,outcome,policy,seed,success,think_us_per_step,tier,time_s,torque_jerk,wheel_jerk
+5.452,107.06,0,6.63,timeout,mlp_v2_hist,1010000,False,184.5,1,40.0,0.5883,0.0321
+3.402,44.65,1,11.11,timeout,mlp_v2_hist,1010001,False,185.0,1,40.0,0.7391,0.0347
+5.194,68.08,2,18.32,timeout,mlp_v2_hist,1010002,False,182.7,1,40.0,0.6592,0.0359
+4.158,73.86,3,15.8,timeout,mlp_v2_hist,1010003,False,186.0,1,40.0,0.7101,0.0308
+4.028,91.14,4,25.86,timeout,mlp_v2_hist,1010004,False,184.7,1,40.0,0.6949,0.0434
+2.218,31.44,5,12.99,timeout,mlp_v2_hist,1010005,False,186.6,1,40.0,0.1662,0.0218
+0.906,37.57,6,15.84,timeout,mlp_v2_hist,1010006,False,188.0,1,40.0,0.0652,0.0075
+2.319,27.52,7,12.58,timeout,mlp_v2_hist,1010007,False,183.1,1,40.0,0.5476,0.0293
+3.323,38.61,8,35.04,timeout,mlp_v2_hist,1010008,False,187.6,1,40.0,0.7582,0.0412
+4.22,10.81,9,9.24,timeout,mlp_v2_hist,1010009,False,187.4,1,40.0,0.6921,0.0425

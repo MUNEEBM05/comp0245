@@ -1,0 +1,14 @@
+{
+ "1": {
+  "scenes": 50,
+  "success_rate": 0.0,
+  "median_final_err_cm": 198.595,
+  "mean_time_to_reach_s": NaN,
+  "torque_jerk": 0.42190000000000005,
+  "wheel_jerk": 0.02077,
+  "think_us_per_step": 644.6899999999999,
+  "outcomes": {
+   "crashed_object": 50
+  }
+ }
+}

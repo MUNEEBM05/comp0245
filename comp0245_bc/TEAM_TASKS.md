@@ -22,8 +22,8 @@ GRU, convolution (TCN) and attention models all did worse than the MLP with the 
 | When | Who | What |
 |---|---|---|
 | Thu 29 – Fri 30 | David (compute) | "Objects anywhere" test (tier 6), regression baselines, Stage B on all models, Bayesian optimisation |
-| Thu 29 – Fri 30 | Teammate 1 | Plots and diagrams (below) |
-| Thu 29 – Fri 30 | Teammate 2 | Reproduce model R on Windows + Stage B tests on model R (below) |
+| Thu 29 – Fri 30 | Muneeb | Plots and diagrams (below) |
+| Thu 29 – Fri 30 | Abdullah | Reproduce model R on Windows + Stage B tests on model R, then code quality and reproducibility for the markers (below) |
 | Sat 31 – Mon 2 | Everyone | Clean-up, understanding, process/code diagrams, results and benchmark figures |
 | Mon 2 – Wed 4 | Everyone | **First full draft by Wednesday 4 Nov** (6-page IEEE) for review |
 | Thu 5 | Everyone | Review, fix, demo rehearsal |
@@ -32,7 +32,7 @@ GRU, convolution (TCN) and attention models all did worse than the MLP with the 
 **Decided:** Stage C (obstacles + safety layer) is SKIPPED – no time. Mention it as future work.
 
 ---------------------------------------------------------------------------------------------------
-## Teammate 1 – plots and figures (no simulator needed)
+## Muneeb – plots and figures (no simulator needed)
 
 Use Python + matplotlib + pandas, reading the CSVs. Save PNGs into `figures/` at dpi 200, readable in a
 two-column IEEE paper (column width ~3.5 in, so keep figures ~3.5 x 2.5 in, fonts >= 8 pt).
@@ -80,7 +80,7 @@ delay, 5 changed physics (floor friction, base mass), 6 objects anywhere (some u
    `figures/data_coverage.png`, `figures/data_expert_quality.png` (from `data_report.py`).
 
 ---------------------------------------------------------------------------------------------------
-## Teammate 2 – reproduce model R on Windows + Stage B tests
+## Abdullah – reproduce model R on Windows, Stage B tests, then code quality for the markers
 
 Work in the RoboEnv pixi shell, in the project folder (the code zip unzipped on top of the Stage A files).
 No training is needed: `trained/vR_ik.npz` is included. Use `--workers 3` (≈ CPU cores − 1).
@@ -109,7 +109,40 @@ the controller SEES) + command delay 1–4 ms. Note: the EXPERT itself crashes s
 Send back the new CSV files (`results50/vR_ik_tier4.csv`, `vR_ik_noiseonly_tier4.csv`,
 `vR_ik_delayonly_tier4.csv`, `vR_ik_tier5.csv` and the matching `_summary.json`).
 
-### 3. If time is left: report reading list (related work section)
+### 3. Code quality and reproducibility for the markers (main job after the tests)
+Goal: a marker unzips our code, follows ONE page, sees the robot drive and gets our numbers.
+What the brief requires in the README: (1) how to run the code and which outputs it generates;
+(2) which external code was used and which parts were modified or written from scratch.
+Data and trained weights are NOT submitted on Moodle (they go on OneDrive / Hugging Face with a link).
+
+Checklist:
+- [ ] **Fresh-folder test**: unzip the code into an EMPTY folder on Windows, follow only the README, and note
+      every place you get stuck. Fix the README (or the code) until it works without help.
+- [ ] **Quick start in the README (top)**: 3 commands, each with what you should see and how long it takes:
+      (a) watch model R drive one scene in the GUI, e.g.
+      `python -c "from rollout import *; m,_=rollout(make_policy('trained/vR_ik.npz'), {'seed':0,'target':[0,1.1,0.5],'start_pose':[0,0,0]}, use_gui=True, hold_s=5); print(m['outcome'], m['final_err_cm'], 'cm')"`
+      (b) the 10-scene test (`evaluate.py ... --n 10 --hold 5`), (c) the results table (`compare.py`).
+      Consider wrapping (a) into a small `demo.py` with `--model` and `--scene` options and a clear printout.
+- [ ] **Reproduce section**: the exact commands, in order, from recording data to the final table
+      (see "Reproduce R" in `WHATS_NEW.md`), with expected run times on a normal laptop and expected results
+      (with our seed-to-seed spread, so a marker knows what "the same" means).
+- [ ] **Script map**: one table, every `.py` file, one line on what it does, "core" vs "experiment"
+      (experiments: `dagger.py`, `markov_expert.py`, `train_gru.py`, `train_conv.py`, ...). Consider moving
+      the batch `run_*.sh` files into an `experiments/` folder and saying they are Linux command lists.
+- [ ] **Sources and changes**: template files used unchanged (`robotnik_arm_control.py`, config JSON);
+      template main loop turned into `expert_episode.py` (what changed: function, random starts, recording,
+      hold/noise options; controllers untouched); everything else written by us; libraries used
+      (PyTorch, NumPy, Pinocchio, PyBullet / simulation_and_control, scikit-learn, matplotlib).
+- [ ] **Every script runs politely**: `python <script> --help` works and explains the options; a missing
+      file gives a one-line message, not a traceback (we use `quiet.run_main` for this).
+- [ ] **Dependencies**: say which pixi environment to use; PyTorch is only needed for TRAINING (driving
+      uses NumPy only); list versions (`pip list` in the environment).
+- [ ] **Determinism**: note that scenes and recordings are seeded (same seed → same scene and noise),
+      training seeds are set, and results may differ slightly across machines.
+- [ ] **Data link**: README line with the OneDrive / Hugging Face link and the expected folder layout
+      (`data/runs`, `data/runs_hold`, ...), and which folders are needed for which model.
+
+### 4. If time is left: report reading list (related work section)
 Behaviour cloning compounding errors and DAgger (Ross, Gordon & Bagnell 2011); noise injection DART
 (Laskey et al. 2017); HG-DAgger (Kelly et al. 2019); domain randomisation (Tobin et al. 2017); action
 chunking / ACT (Zhao et al. 2023); robomimic "What matters in learning from offline human demonstrations"

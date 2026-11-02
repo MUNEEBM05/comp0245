@@ -1,0 +1,11 @@
+base_path_m,face_err_end_deg,final_err_cm,goal_dist_end_m,index,min_err_cm,outcome,policy,seed,success,think_us_per_step,tier,time_s,torque_jerk,wheel_jerk,wheels_end,yaw_rate_end
+5.105,52.2,58.98,0.041,0,6.95,timeout,vB_separate,1010000,False,269.7,1,40.0,0.648,0.0312,3.147,1.18
+1.288,50.8,52.14,0.11,1,17.8,timeout,vB_separate,1010001,False,268.0,1,40.0,0.1644,0.0164,0.009,0.0
+2.384,53.8,203.2,0.973,2,1.22,timeout,vB_separate,1010002,False,259.2,1,40.0,0.1314,0.0112,0.415,0.03
+1.116,17.3,19.2,0.103,3,11.28,timeout,vB_separate,1010003,False,263.8,1,40.0,0.1035,0.0083,0.01,0.0
+2.363,46.9,43.91,0.199,4,25.46,timeout,vB_separate,1010004,False,282.8,1,40.0,0.4399,0.1051,1.09,0.003
+3.125,71.6,247.25,1.348,5,5.03,timeout,vB_separate,1010005,False,280.6,1,40.0,0.1742,0.008,0.332,0.026
+0.933,27.7,26.74,0.343,6,20.82,crashed_base,vB_separate,1010006,False,298.0,1,9.2,0.4186,0.0413,0.044,0.0
+2.732,101.4,112.44,0.213,7,24.47,timeout,vB_separate,1010007,False,300.1,1,40.0,0.5443,0.1013,2.235,0.344
+1.168,18.2,13.58,0.131,8,9.73,timeout,vB_separate,1010008,False,278.1,1,40.0,0.1506,0.015,0.009,0.0
+2.002,21.8,27.79,0.17,9,9.52,timeout,vB_separate,1010009,False,270.8,1,40.0,0.2548,0.0511,0.012,0.0

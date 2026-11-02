@@ -1,0 +1,18 @@
+{
+ "4": {
+  "scenes": 50,
+  "success_rate": 0.04,
+  "median_final_err_cm": 74.69,
+  "mean_time_to_reach_s": 18.839,
+  "torque_jerk": 24.797974,
+  "wheel_jerk": 0.49925600000000003,
+  "think_us_per_step": 541.56,
+  "outcomes": {
+   "crashed_ground": 7,
+   "timeout": 16,
+   "crashed_base": 23,
+   "reached_not_held": 2,
+   "reached": 2
+  }
+ }
+}

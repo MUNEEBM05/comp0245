@@ -47,6 +47,13 @@ def _find_run(seed, run_dirs):
     raise FileNotFoundError(f"run {seed} not found in {run_dirs}")
 
 
+def _drop_idx(a):
+    names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel, getattr(a, "ik", False), getattr(a, "lidar", False))
+    if getattr(a, "relative", False):
+        names = [n for n in names if n not in ABSOLUTE_NAMES]
+    return [i for i, n in enumerate(names) if any(n.startswith(p) for p in a.drop)]
+
+
 def run_data(arrays, a):
     """Inputs X, outputs Y and a per-row 'reaching' flag for one recorded run.
 
@@ -54,9 +61,12 @@ def run_data(arrays, a):
     the loss care more about the final approach, which is a small fraction of every run.
     """
     X, Y = run_xy_full(arrays, history=a.history == "deltas", goal=a.goal, integral=a.integral, action=a.action,
-                       wheel_vel=a.wheel_vel, ik=getattr(a, "ik", False))
+                       wheel_vel=a.wheel_vel, ik=getattr(a, "ik", False),
+                       lidar=getattr(a, "lidar", False))
     if getattr(a, "relative", False):
         X = np.delete(X, ABSOLUTE_IDX, axis=1)
+    if getattr(a, "drop", None):    # ablation: leave out every input whose name starts with one of these
+        X = np.delete(X, _drop_idx(a), axis=1)
     if a.action == "torque" and a.torque == "minus_gravity":
         Y = Y.copy()
         Y[:, :7] -= arrays["tau_gravity"]
@@ -115,16 +125,22 @@ def train_mlp(xtr, ytr, xva, yva, a, wtr=None):
     xtr_t, ytr_t = torch.from_numpy(xtr), torch.from_numpy(ytr)
     wtr_t = torch.from_numpy(np.ones(len(xtr), np.float32) if wtr is None else wtr.astype(np.float32))
     xva_t, yva_t = torch.from_numpy(xva), torch.from_numpy(yva)
+    noise_std = getattr(a, "noise_std_t", None)
+    if noise_std is not None:
+        from augment import add_noise
+        gen = torch.Generator().manual_seed(a.seed + 123)
 
     # Fully connected network: inputs -> hidden (ReLU) x N -> outputs, no activation on the output
     # because torques and wheel speeds are unbounded real numbers.
     layers, d = [], xtr.shape[1]
     for h in a.hidden:
-        layers += [nn.Linear(d, h), nn.ReLU()]
+        layers += [nn.Linear(d, h), nn.ReLU()] + ([nn.Dropout(a.dropout)] if a.dropout > 0 else [])
         d = h
     layers.append(nn.Linear(d, ytr.shape[1]))
     net = nn.Sequential(*layers)
-    opt = torch.optim.Adam(net.parameters(), lr=a.lr)
+    # weight decay (L2 regularisation, Lecture 6) makes the network smoother; AdamW applies it correctly with Adam
+    opt = (torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=a.weight_decay) if a.weight_decay > 0
+           else torch.optim.Adam(net.parameters(), lr=a.lr))
     loss_fn = nn.MSELoss()  # MSE: punishes large torque errors most (those make the arm overshoot)
 
     # Train in mini-batches; keep the weights of the epoch with the lowest VALIDATION loss and stop
@@ -137,7 +153,10 @@ def train_mlp(xtr, ytr, xva, yva, a, wtr=None):
         for i in range(0, len(xtr_t), a.batch):
             idx = perm[i:i + a.batch]
             opt.zero_grad()
-            err = ((net(xtr_t[idx]) - ytr_t[idx]) ** 2).mean(1)      # MSE per row
+            xb = xtr_t[idx]
+            if noise_std is not None:     # fresh sensor-like noise every batch, label stays clean
+                xb = add_noise(xb, noise_std, gen)
+            err = ((net(xb) - ytr_t[idx]) ** 2).mean(1)      # MSE per row
             loss = (wtr_t[idx] * err).sum() / wtr_t[idx].sum()      # weighted average
             loss.backward()
             opt.step()
@@ -191,6 +210,8 @@ def main():
     ap.add_argument("--ik", action="store_true",
                     help="add the arm's IK direction (joint speeds the arm's geometry asks for) and its running "
                          "averages: the fine-correction signal for the last centimetre (ik_features.py)")
+    ap.add_argument("--lidar", action="store_true",
+                    help="add 24 LiDAR slice distances as inputs (for the student of the expert + navigation layer)")
     ap.add_argument("--wheel-vel", action="store_true",
                     help="add the measured wheel speeds as inputs (ablation: may cause the copycat shortcut)")
     ap.add_argument("--action", choices=["torque", "reference"], default="torque",
@@ -209,6 +230,14 @@ def main():
     ap.add_argument("--relative", action="store_true",
                     help="drop the absolute map positions (tgt_x, tgt_y, base_x, base_y): every input is then seen "
                          "from the robot, so the model does not depend on where on the map it is")
+    ap.add_argument("--pca", type=int, default=0, help="feed the network only the first N principal components")
+    ap.add_argument("--weight-decay", type=float, default=0.0, help="L2 regularisation strength (AdamW), e.g. 1e-3")
+    ap.add_argument("--dropout", type=float, default=0.0, help="dropout rate in the hidden layers, e.g. 0.1")
+    ap.add_argument("--aug-noise", action="store_true",
+                    help="data augmentation: add fresh sensor-like noise to the inputs of every training batch "
+                         "(augment.py), so the model learns to ignore wobbly readings")
+    ap.add_argument("--drop", nargs="*", default=[],
+                    help="ablation: leave out inputs whose names start with these prefixes, e.g. qd_ik_avg err_avg")
     ap.add_argument("--runs", nargs="+", default=[os.path.join(HERE, "data", "runs")],
                     help="one or more run folders (e.g. clean + nudged recordings); the split lists their seeds")
     ap.add_argument("--split", default=os.path.join(HERE, "splits", "split.json"))
@@ -274,7 +303,7 @@ def main():
         pred = forest.predict(xva) * y_std + y_mean
         mae = np.abs(pred - Yva).mean(0)
         val_mse = float((((pred - Yva) / y_std) ** 2).mean())
-        names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel, a.ik)
+        names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel, a.ik, a.lidar)
         meta = {"name": a.name, "model": "forest", "torque": a.torque, "history_features": a.history,
                 "goal_features": a.goal, "integral_features": a.integral, "action": a.action,
                 "wheel_vel_features": a.wheel_vel, "separate": False, "groups": ["all"],
@@ -291,6 +320,26 @@ def main():
               f"| standardised MSE {val_mse:.4f}")
         print(f"  saved {out} ({os.path.getsize(out) / 1e6:.0f} MB, {time.time() - t0:.0f} s)")
         return
+
+    pca_V = pca_s = None
+    if a.pca:
+        # PCA (Unsupervised Methods lecture): keep the a.pca directions of largest variance of the standardised
+        # inputs, rescaled to unit spread. Fitted on training data only.
+        rng_p = np.random.default_rng(a.seed)
+        sub = xtr[rng_p.choice(len(xtr), min(200000, len(xtr)), replace=False)]
+        _, sv, Vt = np.linalg.svd(sub - sub.mean(0), full_matrices=False)
+        explained = (sv ** 2) / (sv ** 2).sum()
+        pca_V = Vt[:a.pca].T.astype(np.float32)
+        pca_s = (xtr @ pca_V).std(0).astype(np.float32) + 1e-6
+        xtr, xva = (xtr @ pca_V) / pca_s, (xva @ pca_V) / pca_s
+        print(f"  PCA: {a.pca} of {len(sv)} components keep {100 * explained[:a.pca].sum():.1f}% of the input variance")
+    a.noise_std_t = None
+    if a.aug_noise:
+        import torch
+        from augment import feature_noise_scale
+        scale = feature_noise_scale(a, run_data)
+        a.noise_std_t = torch.from_numpy((scale / x_std).astype(np.float32))
+        print(f"  input-noise augmentation on: {int((scale > 0).sum())} of {len(scale)} inputs move with sensor noise")
 
     # Per-row loss weights: 1 while driving, reach_weight while the arm is reaching
     wtr = 1.0 + (a.reach_weight - 1.0) * Rtr
@@ -309,18 +358,20 @@ def main():
                                   xva.astype(np.float32), yva[:, sl].astype(np.float32), a, wtr)
             nets[g], history[g] = (Ws, bs), h
 
-    pred = np.column_stack([forward(*nets[g], xva) for g in groups]) * y_std + y_mean
+    pred = np.column_stack([forward(*nets[g], xva) for g in groups]) * y_std + y_mean   # xva is PCA-mapped if --pca
     mae = np.abs(pred - Yva).mean(0)               # in real units
     val_mse = float((((pred - Yva) / y_std) ** 2).mean())
 
-    names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel, a.ik)
+    names = feature_names_full(a.history == "deltas", a.goal, a.integral, a.wheel_vel, a.ik, a.lidar)
     if a.relative:
         names = [n for n in names if n not in ABSOLUTE_NAMES]
+    if a.drop:
+        names = [n for n in names if not any(n.startswith(p) for p in a.drop)]
     OUTPUT_NAMES = output_names(a.action)
     meta = {"name": a.name, "model": a.model, "torque": a.torque, "history_features": a.history,
             "goal_features": a.goal, "integral_features": a.integral, "action": a.action,
-            "wheel_vel_features": a.wheel_vel, "ik_features": a.ik, "relative": a.relative,
-            "keep_unreachable": a.keep_unreachable,
+            "wheel_vel_features": a.wheel_vel, "ik_features": a.ik, "lidar_features": a.lidar, "relative": a.relative,
+            "keep_unreachable": a.keep_unreachable, "dropped": a.drop, "aug_noise": a.aug_noise, "weight_decay": a.weight_decay, "dropout": a.dropout, "pca": a.pca,
             "separate": a.separate, "reach_weight": a.reach_weight, "hold_weight": a.hold_weight,
             "groups": list(groups), "feature_names": names,
             "output_names": OUTPUT_NAMES, "hidden": a.hidden if a.model == "mlp" else [],
@@ -337,6 +388,8 @@ def main():
         weights.update({f"{prefix}W{i}": W for i, W in enumerate(Ws)})
         weights.update({f"{prefix}b{i}": b for i, b in enumerate(bs)})
         weights[f"{prefix}n_layers"] = np.array(len(Ws))
+    if pca_V is not None:
+        weights.update(pca_V=pca_V, pca_s=pca_s)
     np.savez(out, x_mean=x_mean, x_std=x_std, y_mean=y_mean, y_std=y_std, x_lo=x_lo, x_hi=x_hi,
              meta=np.array(json.dumps(meta)), **weights)
 

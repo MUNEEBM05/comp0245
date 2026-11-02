@@ -97,12 +97,16 @@ def main():
     ap.add_argument("--out", default=os.path.join(HERE, "results"))
     ap.add_argument("--hold", type=float, default=0.0,
                     help="stricter success: the hand must stay within 1 cm this many seconds (results get _hold<s>)")
+    ap.add_argument("--set", nargs="*", default=[], metavar="KEY=VALUE",
+                    help="Stage B: add one disturbance to every scene, e.g. obs_noise=0.01, delay_steps=2, "
+                         "torque_noise=2, payload_kg=0.5 (results get a matching suffix)")
     ap.add_argument("--only", choices=["noise", "delay"],
                     help="diagnosis: keep only this part of each scene's disturbance (tier 4: noise vs delay)")
     a = ap.parse_args()
 
+    wrapped = ":filt" in a.policy or a.policy.startswith("ens:") or a.policy.endswith(":nav") or a.policy.endswith(":mapnav") or a.policy.endswith(":kf") or a.policy.endswith(":kfv") or a.policy == "planner" or a.policy.startswith(("planner:", "driver:", "driverbrake:", "cam:"))
     policy_file = a.policy.rsplit(":", 1)[0] if a.policy.endswith((":mlp_arm", ":mlp_wheels")) else a.policy
-    if a.policy not in ("expert", "markov_expert") and not os.path.exists(policy_file):
+    if not wrapped and a.policy not in ("expert", "markov_expert") and not os.path.exists(policy_file):
         print(f"Policy file not found: {a.policy}")
         return
     if not os.path.exists(a.scenes):
@@ -110,11 +114,20 @@ def main():
         return
     with open(a.scenes) as fh:
         scenes = json.load(fh)["scenes"]
-    name = a.policy if a.policy in ("expert", "markov_expert") else os.path.splitext(os.path.basename(policy_file))[0]
+    if wrapped:
+        from rollout import make_policy as _mp
+        name = _mp(a.policy).name
+    else:
+        name = a.policy if a.policy in ("expert", "markov_expert") else os.path.splitext(os.path.basename(policy_file))[0]
     if policy_file.endswith(".pkl"):
         print("note: a random forest predicts far slower than an MLP; each drive takes longer")
     if policy_file != a.policy:
         name += "_" + a.policy.rsplit(":", 1)[1]
+    for kv in a.set:
+        k, v = kv.split("=")
+        for s in scenes:
+            s["disturbance"] = dict(s.get("disturbance") or {}, **{k: (int(v) if k == "delay_steps" else float(v))})
+        name += f"_{k}{v}"
     if a.hold > 0:
         name += f"_hold{a.hold:g}"
     if a.only:

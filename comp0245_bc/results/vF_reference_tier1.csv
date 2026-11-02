@@ -1,0 +1,11 @@
+base_path_m,face_err_end_deg,final_err_cm,goal_dist_end_m,index,min_err_cm,outcome,policy,seed,success,think_us_per_step,tier,time_s,torque_jerk,wheel_jerk,wheels_end,yaw_rate_end
+1.464,1.3,2.54,0.02,0,1.46,timeout,vF_reference,1010000,False,328.9,1,40.0,0.1001,0.0047,0.01,0.0
+1.141,1.1,1.54,0.016,1,1.54,timeout,vF_reference,1010001,False,327.1,1,40.0,0.1059,0.0044,0.007,0.0
+1.371,1.0,5.29,0.017,2,2.69,timeout,vF_reference,1010002,False,333.7,1,40.0,0.0562,0.0039,0.008,0.0
+0.965,0.1,1.0,0.112,3,1.0,reached,vF_reference,1010003,True,320.1,1,8.36,0.3945,0.0197,0.008,0.0
+1.538,3.9,1.0,0.08,4,1.0,reached,vF_reference,1010004,True,348.0,1,11.643,0.3444,0.0146,0.008,0.0
+1.691,3.5,6.46,0.02,5,1.54,timeout,vF_reference,1010005,False,322.2,1,40.0,0.0723,0.0039,0.009,0.0
+0.972,15.4,15.18,0.065,6,1.46,crashed_base,vF_reference,1010006,False,344.3,1,28.55,0.0997,0.0062,0.012,0.0
+0.825,6.2,1.0,0.019,7,1.0,reached,vF_reference,1010007,True,346.5,1,24.209,0.1413,0.0085,0.007,0.0
+1.036,0.7,19.53,0.141,8,1.74,timeout,vF_reference,1010008,False,346.2,1,40.0,0.1001,0.0039,0.007,0.0
+1.365,3.0,1.0,0.068,9,1.0,reached,vF_reference,1010009,True,355.5,1,9.321,0.2773,0.0129,0.008,0.001

@@ -1,0 +1,13 @@
+{
+ "trial": 3,
+ "lr": 0.0007411498939805824,
+ "batch": 2048,
+ "width": 192,
+ "depth": 3,
+ "reach_weight": 2.4729661593621923,
+ "filter_ms": 29,
+ "held_clean": 0.95,
+ "held_noisy": 0.95,
+ "score": 0.95,
+ "minutes": 14.1
+}

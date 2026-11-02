@@ -73,6 +73,8 @@ def randomise_world(seed, dr):
         "delay_steps": int(rng.integers(dr["delay"][0], dr["delay"][1] + 1)),
         "floor_friction": float(rng.uniform(*dr["friction"])),
         "base_mass_scale": float(rng.uniform(*dr["mass"])),
+        "motor_noise_std": float(rng.choice(dr["motor_noise"])),
+        "payload_kg": float(rng.choice(dr["payload"])),
     }
 
 
@@ -97,6 +99,10 @@ def main():
                     help="floor friction drawn per run (template: 1.0)")
     ap.add_argument("--mass", type=float, nargs=2, default=[1.0, 1.0], metavar=("LO", "HI"),
                     help="base mass multiplier drawn per run")
+    ap.add_argument("--motor-noise", type=float, nargs="+", default=[0.0],
+                    help="arm motor noise levels (N*m, held 20 ms); each run picks one")
+    ap.add_argument("--payload", type=float, nargs="+", default=[0.0],
+                    help="unknown mass in the hand (kg); each run picks one")
     ap.add_argument("--hold", type=float, default=0.0,
                     help="keep recording this many seconds after the expert arrives (hold-still data), e.g. 5")
     ap.add_argument("--z-bands", type=float, nargs="*", default=[],
@@ -112,7 +118,8 @@ def main():
         return
 
     os.makedirs(a.out, exist_ok=True)
-    dr = {"obs_noise": a.obs_noise, "delay": a.delay, "friction": a.friction, "mass": a.mass}
+    dr = {"obs_noise": a.obs_noise, "delay": a.delay, "friction": a.friction, "mass": a.mass,
+          "motor_noise": a.motor_noise, "payload": a.payload}
     jobs = [(s, a.out, a.noise[s % len(a.noise)], a.time_limit, a.nudge_when, a.kick, dr, a.hold, a.z_bands, a.wide)
             for s in range(a.start, a.end)]
     counts, t0 = {}, time.time()

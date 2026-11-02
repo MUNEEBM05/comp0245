@@ -1,0 +1,16 @@
+{
+ "1": {
+  "scenes": 50,
+  "success_rate": 0.4,
+  "median_final_err_cm": 0.77,
+  "mean_time_to_reach_s": 40.759,
+  "torque_jerk": 0.24384400000000003,
+  "wheel_jerk": 0.01241,
+  "think_us_per_step": 737.2359999999999,
+  "outcomes": {
+   "reached_not_held": 10,
+   "reached": 20,
+   "timeout": 20
+  }
+ }
+}
