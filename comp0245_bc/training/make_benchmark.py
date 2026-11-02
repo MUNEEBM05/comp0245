@@ -1,0 +1,51 @@
+"""Generate the benchmark scenes ONCE and freeze them in benchmark/scenes.json.
+
+    python training/make_benchmark.py            # 50 scenes per tier, tiers 1-4
+
+Run this before any training and never change the file afterwards: every model is tested on
+exactly these scenes, and nobody can tune the test to suit a model.
+"""
+from _paths import ROOT, find_result  # noqa: F401  (project folder; lets the code folders import each other)
+import argparse
+import json
+import os
+
+from quiet import run_main
+from samplers import benchmark_scene
+
+HERE = ROOT
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--per-tier", type=int, default=50)
+    ap.add_argument("--out", default=os.path.join(HERE, "benchmark", "scenes.json"))
+    ap.add_argument("--force", action="store_true", help="overwrite an existing frozen file")
+    ap.add_argument("--add-tier", type=int, help="append a NEW tier to the frozen file (existing scenes untouched)")
+    a = ap.parse_args()
+
+    if a.add_tier is not None:
+        with open(a.out) as fh:
+            bench = json.load(fh)
+        if any(s["tier"] == a.add_tier for s in bench["scenes"]):
+            print(f"Tier {a.add_tier} is already in {a.out}; nothing changed.")
+            return
+        bench["scenes"] += [benchmark_scene(a.add_tier, i) for i in range(bench["per_tier"])]
+        with open(a.out, "w") as fh:
+            json.dump(bench, fh, indent=1)
+        print(f"Added {bench['per_tier']} tier-{a.add_tier} scenes to {a.out} (tiers 1-4 unchanged)")
+        return
+
+    if os.path.exists(a.out) and not a.force:
+        print(f"{a.out} already exists and is frozen. Not overwriting (use --force only if you really mean it).")
+        return
+    scenes = [benchmark_scene(t, i) for t in (1, 2, 3, 4) for i in range(a.per_tier)]
+    os.makedirs(os.path.dirname(a.out), exist_ok=True)
+    with open(a.out, "w") as fh:
+        json.dump({"description": "Frozen benchmark scenes. Do not edit.", "per_tier": a.per_tier,
+                   "scenes": scenes}, fh, indent=1)
+    print(f"Wrote {len(scenes)} scenes ({a.per_tier} per tier, tiers 1-4) to {a.out}")
+
+
+if __name__ == "__main__":
+    run_main(main, HERE)

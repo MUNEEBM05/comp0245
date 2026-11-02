@@ -32,21 +32,21 @@ cd C:\path\to\comp0245_bc
 ```
 
 `configs/robotnik_arm.json` is included. The recorded data, trained models and results are on
-OneDrive: *(add link)*. Unzip `data/` and `results50/` next to the code to skip recording and testing.
+OneDrive: *(add link)*. Unzip `data/` and `results/` next to the code to skip recording and testing.
 
 **Training needs PyTorch**, which lives in RoboEnv's `ml` environment: run training as
-`pixi run -e ml python train.py ...` (from the RoboEnv folder) or inside `pixi shell -e ml`.
+`pixi run -e ml python training/train.py ...` (from the RoboEnv folder) or inside `pixi shell -e ml`.
 Everything else (recording, driving, figures) runs in the default environment: no PyTorch needed to
 drive, the trained weights are plain NumPy arrays.
 
 ## 2. Quick start: three commands
 
 ```powershell
-python expert_episode.py                                      # 1 expert run on the template's own scene
+python core/expert_episode.py                                      # 1 expert run on the template's own scene
 #   expect: Outcome: reached | final error 0.21 cm | time 8.00 s      (identical to the template)
-python evaluate.py --policy trained\vK_kick.npz --tiers 1 --n 10 --workers 3
+python evaluation/evaluate.py --policy trained\vK_kick.npz --tiers 1 --n 10 --workers 3
 #   the final model drives 10 benchmark scenes (~2 min); expect about 7/10 reached
-python compare.py --results results --policies expert vK_kick        # the results table
+python evaluation/compare.py --results results --policies expert vK_kick        # the results table
 ```
 
 To watch a drive instead of reading numbers: `python -c "from rollout import *; rollout(MLPPolicy('trained/vK_kick.npz'), {'seed':0,'target':[0,1.1,0.5],'start_pose':[0,0,0]}, use_gui=True)"`.
@@ -73,7 +73,7 @@ To watch a drive instead of reading numbers: `python -c "from rollout import *; 
 | | `DATA_FORMAT.md` | Every field in a recording file |
 
 Folders: `data/` recordings (`runs` clean, `runs_nudged`, `runs_reach`, `runs_kick`), `benchmark/`
-the frozen scenes, `splits/`, `trained/` models, `results50/` benchmark results, `figures/`.
+the frozen scenes, `splits/`, `trained/` models, `results/` benchmark results, `figures/`.
 
 ## 4. The ladder: every version, same 50 scenes
 
@@ -92,7 +92,7 @@ the frozen scenes, `splits/`, `trained/` models, `results50/` benchmark results,
 | **K** | + **velocity-kick recordings** (recovery from motion) | **34–36/50** | crashes 3 → 1, seeds agree |
 
 Where a range is given, the version was trained with 2–3 random seeds; seed-to-seed spread was
-±10 points for D2, but only ±2 for K. Exact numbers: `results50/*.csv`, `python compare.py --results results50`.
+±10 points for D2, but only ±2 for K. Exact numbers: `results/*.csv`, `python evaluation/compare.py --results results`.
 
 ### Why each change (the reasoning markers will ask about)
 
@@ -206,18 +206,18 @@ mislabelled (seed 189); success is judged on the final error instead.
 ## 7. Reproducing everything from scratch
 
 ```powershell
-python make_benchmark.py                                                   # frozen scenes (already included)
-python collect.py --start 0 --end 300 --workers 3                          # clean runs      (~15 min)
-python collect.py --start 10000 --end 10150 --noise 0.05 0.1 0.15 --workers 3 --out data\runs_nudged
-python collect.py --start 20000 --end 20120 --noise 0.05 0.1 --nudge-when reach --workers 3 --out data\runs_reach
-python collect.py --start 30000 --end 30120 --kick 0.02 --workers 3 --out data\runs_kick
-python make_split.py
-pixi run -e ml python train.py --name vK_kick --history deltas --goal --separate --reach-weight 3 --integral --extra-train data\runs_nudged data\runs_reach data\runs_kick
-python evaluate.py --policy expert            --tiers 1 2 3 4 --n 50 --workers 3 --out results50
-python evaluate.py --policy trained\vK_kick.npz --tiers 1 2 3 4 --n 50 --workers 3 --out results50
-python compare.py --results results50 --markdown
-python analyse_failures.py --results results50 --policies vK_kick
-python make_figures.py
+python training/make_benchmark.py                                                   # frozen scenes (already included)
+python training/collect.py --start 0 --end 300 --workers 3                          # clean runs      (~15 min)
+python training/collect.py --start 10000 --end 10150 --noise 0.05 0.1 0.15 --workers 3 --out data\runs_nudged
+python training/collect.py --start 20000 --end 20120 --noise 0.05 0.1 --nudge-when reach --workers 3 --out data\runs_reach
+python training/collect.py --start 30000 --end 30120 --kick 0.02 --workers 3 --out data\runs_kick
+python training/make_split.py
+pixi run -e ml python training/train.py --name vK_kick --history deltas --goal --separate --reach-weight 3 --integral --extra-train data\runs_nudged data\runs_reach data\runs_kick
+python evaluation/evaluate.py --policy expert            --tiers 1 2 3 4 --n 50 --workers 3 --out results
+python evaluation/evaluate.py --policy trained\vK_kick.npz --tiers 1 2 3 4 --n 50 --workers 3 --out results
+python evaluation/compare.py --results results --markdown
+python evaluation/analyse_failures.py --results results --policies vK_kick
+python analysis/make_figures.py
 ```
 
 Earlier ladder versions: `train.py` with fewer switches (see its docstring), e.g. v0 is
