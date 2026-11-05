@@ -304,7 +304,9 @@ def ladder_tables():
              ("Model P", "+ hold-still and extreme-height recordings", M + "/P", "vP_hold", "vP_hold_hold5"),
              ("Model R", "+ arm IK inputs (71 inputs, two 3x256 MLPs)", M + "/R", "vR_ik", "vR_ik_hold5"),
              ("R-BO", "Bayesian-optimised settings (3x192) + 29 ms position filter", M + "/R-BO", None,
-              "bo_t03_filt29noqd_hold5")]
+              "bo_t03_filt29noqd_hold5"),
+             ("R-BO + Kalman", "Same network, Kalman filter in place of the 29 ms filter", M + "/R-BO", None,
+              "bo_t03_kfv_hold5")]
     rows = [[label, what, rate(sys_, reached) if reached else None, rate(sys_, held) if held else None]
             for label, what, sys_, reached, held in steps]
     return [("The ladder: one change at a time (benchmark tier 1, 50 scenes, seed 0)",
@@ -562,6 +564,7 @@ def noise_tables():
              ("Kalman filter (positions and speeds)", F + "/R+Kalman", "vR_ik_kfv", None),
              ("Kalman filter (positions only)", F + "/R+Kalman_no_speeds", "vR_ik_kf", None),
              ("R-BO + 29 ms position filter", "1_main_models/R-BO", "bo_t03_filt29noqd", None),
+             ("R-BO + Kalman filter", "1_main_models/R-BO", "bo_t03_kfv", None),
              ("Ensemble of 3 seeds", F + "/R_ensemble_of_3_seeds", "ens_vR_ik+vR_ik_s1+vR_ik_s2", None),
              ("Ensemble + 10 ms filter", F + "/R_ensemble_of_3_seeds+position_filter_10ms",
               "ens_vR_ik+vR_ik_s1+vR_ik_s2_filt10noqd", None),
