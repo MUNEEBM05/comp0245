@@ -15,36 +15,121 @@ Team: Muneeb Musharaf, David Wild, Abdullah Qureshi.
 
 ---
 
-## 1. For the examiner: one command
+## 1. Quick start (for the examiner)
+
+**You need:** the course's **RoboEnv** environment (it provides Python, PyBullet and Pinocchio through
+`pixi`) and this code. No GPU and no training data. If RoboEnv is not installed yet, do section 2 first
+(about 10 minutes); it also shows how to get this code from GitHub or from the Moodle zip.
+
+**Step 1 — once:** link RoboEnv's robot models into this folder.
 
 ```bash
-# once: link the robot models and open RoboEnv's environment (details in section 2)
-ln -s /path/to/RoboEnv/models models
-pixi shell --manifest-path /path/to/RoboEnv/pixi.toml
-
-bash reproduce.sh check    # ~10 s : setup, every model loads, every report number recounted from the result files
-bash reproduce.sh quick    # ~5 min : also reruns K, R, the BO network and the final system on 10 scenes each
-bash reproduce.sh full     # ~3 h  : also reruns the final system on the whole super test (500 trials)
+cd comp0245_bc                                  # this folder
+ln -s /path/to/RoboEnv/models models            # e.g. ln -s ~/RoboEnv/models models
 ```
 
-`check` prints each number the report quotes next to the value counted from its result file, with the
-file's path, and rebuilds the super-test table (S1–S5). `quick` and `full` write their reruns to
-`results/reproduced/` and never touch the saved results. Use `WORKERS=8 bash reproduce.sh quick` for more cores.
-None of this needs the recorded training data (`data/`).
-
-## 2. Setup
-
-The code runs inside the course's **RoboEnv** environment (pixi). Linux, WSL or macOS shown; on Windows
-PowerShell use the same commands with `\` paths.
+**Step 2 — every new terminal:** open RoboEnv's environment, then come back to this folder.
 
 ```bash
-ln -s /path/to/RoboEnv/models models                                # once: the robot models
-pixi shell --manifest-path /path/to/RoboEnv/pixi.toml               # testing and figures
-pixi shell --manifest-path /path/to/RoboEnv/pixi.toml -e ml         # the same plus PyTorch, for training
+pixi shell --manifest-path /path/to/RoboEnv/pixi.toml
 cd /path/to/comp0245_bc
 ```
 
-Run every command in this README **from this folder** (`comp0245_bc`).
+**Step 3 — check everything (10 seconds):**
+
+```bash
+bash reproduce.sh check
+```
+
+It checks the setup, loads every trained model, then recounts **every number quoted in the report** from the
+saved per-scene result files and prints them side by side with the file each comes from. It ends with:
+
+```
+43 of 43 model files load
+...
+Model R                  R, T1 held %                          92%     92%  1_main_models/R/tier1/vR_ik_hold5_tier1.csv
+...
+48 of 48 report numbers match their result files.
+check passed.
+```
+
+**Step 4 — run any model from the report by its name:**
+
+```bash
+bash reproduce.sh list          # every name: expert, v0, v1, v2, A, D, E, K, P, R, BO, S1-S5, ModelA
+bash reproduce.sh run           # asks "Model name:" and "How many scenes?", then runs it
+bash reproduce.sh run S3 10     # the same without questions: the final system on 10 of its scenes
+bash reproduce.sh run S3 10 door   # S1-S5 on any super-test condition: fresh, hard, awkward, noise,
+                                   #   noisedelay, obstacles, box, door (exactly as in the super test)
+bash reproduce.sh watch S3      # opens the simulator window on one drive (WSL: export LIBGL_ALWAYS_SOFTWARE=1)
+bash reproduce.sh watch S3 door # ... on a condition, or a scene number: watch S3 55
+```
+
+Each name uses exactly the policy, scenes and settings of the saved result, then compares the rerun with it
+scene by scene, for example:
+
+```
+S3 held: rerun 10/10, saved result 10/10 on the same scenes, same outcome in 10/10 scenes
+report (all scenes): 90% held on fresh scenes
+```
+
+**How long it takes.** One simulated drive takes 15–40 s (an obstacle drive up to 90 s). Drives run 4 at a time
+(`WORKERS=8 bash reproduce.sh run ...` for more cores), so 10 scenes take 1–2 minutes. The obstacle test runs
+its 5 tiers one after another: `run S3 1 obstacles` takes about 8 minutes, `run S3 10 obstacles` about 20.
+`watch` shows one drive and is slower on WSL, which draws the window without the graphics card.
+
+**Larger reruns** (optional):
+
+```bash
+bash reproduce.sh quick         # ~5 min: K, R, the BO network and S3 on 10 scenes each, compared with the saved results
+bash reproduce.sh full          # ~3 h : the final system S3 on the whole super test (500 trials), scored like the report's super-test chart
+```
+
+All reruns go to `results/reproduced/` and never overwrite the saved results.
+
+## 2. Setup from nothing
+
+**Tested on:** Ubuntu 22.04 under WSL2 (Windows 11), RoboEnv's pixi environment (pixi 0.81, Python 3.14,
+NumPy 2.5, PyBullet, Pinocchio 4.1, Matplotlib 3.11), 12 CPU cores. Any Linux or macOS with pixi should work
+the same way. Native Windows (PowerShell, no WSL) was **not** tested: the scripts are bash, so use WSL there.
+
+**2.1 Install pixi** (skip if `pixi --version` already works):
+
+```bash
+curl -fsSL https://pixi.sh/install.sh | sh      # Linux, macOS and WSL; then open a new terminal
+```
+
+**2.2 Install RoboEnv** (the course environment; skip if you already have it):
+
+```bash
+git clone --recurse-submodules https://github.com/VModugno/RoboEnv.git
+cd RoboEnv
+pixi install                    # downloads Python, PyBullet, Pinocchio and simulation_and_control
+pixi run smoke-test             # should print: simulation_and_control OK
+cd ..
+```
+
+**2.3 Get this code**, either way:
+
+```bash
+git clone https://github.com/MUNEEBM05/comp0245.git    # from GitHub
+cd comp0245/comp0245_bc
+```
+
+or unzip the Moodle file and `cd` into its `comp0245_bc` folder.
+
+**2.4 Link the robot models** (once) and **open the environment** (every new terminal):
+
+```bash
+ln -s /path/to/RoboEnv/models models                                # e.g. ln -s ~/RoboEnv/models models
+pixi shell --manifest-path /path/to/RoboEnv/pixi.toml               # testing, figures (all of sections 1, 3, 4, 7)
+pixi shell --manifest-path /path/to/RoboEnv/pixi.toml -e ml         # the same plus PyTorch, only for training
+cd /path/to/comp0245_bc                                             # back to this folder
+bash reproduce.sh check                                             # should end with: check passed.
+```
+
+Run every command in this README **from this folder** (`comp0245_bc`), inside the pixi shell (the prompt
+shows `(roboenv)`).
 
 **What is in git.** All code, the 43 trained models the report uses (`trained/`, plain NumPy arrays) and
 every result the report quotes (`results/`). The recorded expert drives (`data/`, several GB) are not in
@@ -119,6 +204,38 @@ Compare saved results: `python3 evaluation/compare.py --tier 1`. Why drives fail
 `python3 abdullah_code/driver_A/watch.py --policy <POLICY> --tier 1 --index 0` (in WSL first
 `export LIBGL_ALWAYS_SOFTWARE=1`).
 
+### What each command outputs
+
+| Command | Prints | Writes |
+|---|---|---|
+| `bash reproduce.sh check` | setup, models loaded, every report number next to its file, the S1–S5 table | nothing |
+| `bash reproduce.sh list` | every model name, what it is, its report figure, the test conditions | nothing |
+| `bash reproduce.sh run NAME [N] [TEST]` | one line per scene, the success rate, the comparison with the saved result | `results/reproduced/run/NAME[_TEST]/` |
+| `bash reproduce.sh watch NAME [TEST] [SCENE]` | the scene, then one result line; shows the PyBullet window | nothing |
+| `bash reproduce.sh quick` | as `check`, then four reruns and their comparison | `results/reproduced/quick/` |
+| `bash reproduce.sh full` | as `check`, then the S3 super test and its table | `results/reproduced/super_test/` |
+| `python3 evaluation/evaluate.py ...` | one line per scene and a summary per tier | `results/new_runs/` or `--out` |
+
+Every rerun folder holds, per tier, `<policy>_..._tier<k>.csv` (one row per scene) and `<policy>_..._summary.json`,
+plus drive plots with `--plots k` (base and hand paths from above, hand-to-target distance, arm torques). The
+file name says what was run: the policy, then `_obs_noise0.01`, `_objects3` (box), `_objects4` (door) or
+`_hold5` (the 5 s hold rule). Neither `results/reproduced/` nor `results/new_runs/` is in git.
+
+The main columns of a scene row:
+
+| Column | Meaning |
+|---|---|
+| `outcome` | `reached` = success (with `--hold 5`: within 1 cm **and held 5 s**); `reached_not_held` = touched 1 cm but drifted out; `timeout` = time limit; `crashed_base`, `crashed_ground`, `crashed_object`, `crashed_obstacle` = a collision ended the drive |
+| `success` | 1 when `outcome` is `reached` |
+| `final_err_cm`, `min_err_cm` | hand-to-target distance at the end, and the closest it came |
+| `first_reach_s`, `hold_s`, `time_s` | when it first came within 1 cm, how long it then stayed, how long the drive lasted |
+| `torque_jerk`, `wheel_jerk` | how much the commands change from step to step (smoothness) |
+| `think_us_per_step` | the time the controller took per 1 ms decision, in microseconds |
+| `tier`, `index`, `seed` | which scene it was |
+
+The summary JSON gives, per tier: `scenes`, `success_rate`, `median_final_err_cm`, `mean_time_to_reach_s`,
+the two jerks, `think_us_per_step` and a count of each outcome.
+
 ## 5. Train a model
 
 Needs the recordings in `data/` and `pixi shell ... -e ml`. Use a new `--name`, so the committed models are
@@ -181,8 +298,8 @@ python3 analysis/data_report.py             # data coverage figures (needs data/
 
 | Source | Used for | How |
 |---|---|---|
-| Course template (RoboEnv coursework code) | the expert controller and the reaching task | `core/robotnik_arm_control.py` is the template's controller file, **unchanged** apart from its import line. `core/expert_episode.py` and `noise_and_delay/expert_episode_noisy.py` are the template's `robotnik_arm_task.py` main loop **turned into a function** with recording added; they reproduce the template's own run exactly. The A\* planner hands over to the template's parking controller |
-| `simulation_and_control` (course library, in RoboEnv) | the PyBullet simulation wrapper | used as provided |
+| Course template: folder `final/robotnik_arm_task/` of https://github.com/VModugno/LAB_SESSION_COMP_0245_2026_PUBLIC | the expert controller and the reaching task | `core/robotnik_arm_control.py` is the template's controller file, **unchanged** apart from its import line. `core/expert_episode.py` and `noise_and_delay/expert_episode_noisy.py` are the template's `robotnik_arm_task.py` main loop **turned into a function** with recording added; they reproduce the template's own run exactly. The A\* planner hands over to the template's parking controller |
+| `simulation_and_control` (course library, installed by RoboEnv: https://github.com/VModugno/RoboEnv) | the PyBullet simulation wrapper | used as provided |
 | PyBullet | physics simulation | library |
 | Pinocchio | robot model: gravity torque and the arm Jacobian for the IK inputs | library |
 | PyTorch | training the MLPs | library |
@@ -203,7 +320,7 @@ localisation, the camera, search mode, and all evaluation and analysis code.
 | `navigation/` | the base: A\* planner (`planner.py`, `nav.py`), Driver A (`driver.py`), LiDAR (`sensors.py`), localisation, camera, search (`self_nav.py`) |
 | `training/` | recording (`collect.py`), splitting, training (`train.py`), Bayesian optimisation, DAgger |
 | `noise_and_delay/` | the noise diagnosis: disturbed recording, noise check, tier-4 split |
-| `evaluation/` | `evaluate.py` (test any policy), `super_table.py`, `compare.py`, `analyse_failures.py`, `run_super_laptop.py` (super test S1 and S5) |
+| `evaluation/` | `evaluate.py` (test any policy), `run_model.py` (run or watch a model by its report name), `super_table.py`, `compare.py`, `analyse_failures.py`, `run_super_laptop.py` (super test S1 and S5) |
 | `analysis/` | `report_numbers.py` and the figure scripts |
 | `abdullah_code/driver_A/` | Abdullah's recording and training scripts for Driver A and the camera tests, with their own module copies |
 | `trained/` | the trained models |
@@ -219,7 +336,18 @@ import each other, so any script runs from `comp0245_bc` as shown.
 
 ## 10. When something goes wrong
 
-- `No module named pinocchio` (or pybullet): you are not inside `pixi shell` (section 2).
+- `STOP: numpy / pybullet / pinocchio not found` or `No module named pinocchio`: you are not inside the
+  pixi shell (section 2.4); the prompt should start with `(roboenv)`.
+- `STOP: the robot models are missing`: the `models` link is missing or points to the wrong folder (2.4).
+  Make the link **once**: if `ls models` already lists robot folders, do not run `ln` again (a second `ln`
+  tries to put a link inside RoboEnv's own models folder). To redo a wrong link: `rm models`, then `ln -s` again.
+- `pixi: command not found`: open a new terminal after installing pixi (2.1).
+- `Permission denied` on `./reproduce.sh`: run it as `bash reproduce.sh ...` (a zip does not keep the
+  executable flag).
+- `git clone` asks for a password: the repository is not public; use the Moodle zip instead.
+- `watch` gives `cannot connect to X server` or no window: the machine has no display (e.g. a remote server).
+  Use `run`, which needs no window. In WSL, `export LIBGL_ALWAYS_SOFTWARE=1` first.
+- `unknown model` / `unknown test`: the message lists the valid names; `bash reproduce.sh list` shows them all.
 - `Cannot load URDF file`: the `models` link is missing (section 2).
 - `No module named torch`: training needs `pixi shell ... -e ml`.
 - `run ... not found in data/...`: that recording set is not downloaded (section 2).

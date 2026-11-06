@@ -10,17 +10,26 @@
 #   bash reproduce.sh full    (~3 h)    check + rerun the final system S3 on the whole super test (500 trials,
 #                                    the same commands as the original), scored by evaluation/super_table.py
 #
+#   bash reproduce.sh list               every model in the report, by its report name
+#   bash reproduce.sh run                asks which model (K, P, R, BO, S1-S5, ModelA ...) and how many scenes
+#   bash reproduce.sh run S3 10          runs it straight away and compares with the saved result
+#   bash reproduce.sh watch S3           opens the simulator window on one drive
+#
 # Reruns go to results/reproduced/ and never overwrite the saved results. Set WORKERS=8 to use more cores.
 set -u
 cd "$(dirname "$0")"
 PY=${PY:-python3}
 WORKERS=${WORKERS:-4}
+export WORKERS
 OUT=results/reproduced
 MODE=${1:-check}
-case "$MODE" in check|quick|full) ;; *) echo "usage: bash reproduce.sh [check|quick|full]"; exit 2;; esac
+case "$MODE" in check|quick|full|list|run|watch) ;;
+  *) echo "usage: bash reproduce.sh [check | quick | full | list | run [NAME [N]] | watch NAME]"; exit 2;; esac
 
 line() { printf '\n== %s\n' "$*"; }
 fail() { echo "STOP: $*"; exit 1; }
+
+[ "$MODE" = list ] && exec $PY evaluation/run_model.py list
 
 # ---------------------------------------------------------------- check
 line "1/3 setup"
@@ -30,6 +39,12 @@ $PY -c "import numpy, pybullet, pinocchio, matplotlib" 2>/dev/null \
   || fail "the robot models are missing. Link them: ln -s /path/to/RoboEnv/models models"
 echo "python: $($PY -c 'import sys; print(sys.executable)')"
 echo "robot models: ok"
+
+# run / watch one model by its report name (only needs the setup check above)
+if [ "$MODE" = run ] || [ "$MODE" = watch ]; then
+  shift
+  exec $PY evaluation/run_model.py "$MODE" "$@"
+fi
 
 line "2/3 every trained model loads"
 $PY - <<'EOF' || fail "a model file did not load"
