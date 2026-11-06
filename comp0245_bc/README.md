@@ -65,6 +65,10 @@ bash reproduce.sh watch S3      # opens the simulator window on one drive (WSL: 
 bash reproduce.sh watch S3 door # ... on a condition, or a scene number: watch S3 55
 ```
 
+**`check`, `run`, `quick` and `full` run the simulation without a window**: several drives at once, which is
+faster and works on any machine. You see one line per finished drive. **To see the robot move, use `watch`**,
+which opens the PyBullet window for one drive.
+
 Each name uses exactly the policy, scenes and settings of the saved result, then compares the rerun with it
 scene by scene, for example:
 
