@@ -102,7 +102,7 @@ EOF
   exit 0
 fi
 
-# full: the final system S3 on the whole super test, exactly as in scripts/run_super_server.sh
+# full: the final system S3 on the whole super test, with the same commands and settings as the saved results
 S=$OUT/super_test
 P=planner:trained/bo_t03.npz:kfv
 line "full rerun of the final system S3 on the super test (500 trials, about 3 h with 4 workers)"

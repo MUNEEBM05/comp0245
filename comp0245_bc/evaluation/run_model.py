@@ -53,7 +53,7 @@ MODELS = {
                "driverbrake:trained/driver_A.npz:expert", OBST, True,
                [AB + f"brake_driver_A_expert_hold5_tier{t}.csv" for t in range(10, 15)]),
 }
-# The eight super-test conditions (as in scripts/run_super_server.sh), for S1-S5:
+# The eight super-test conditions, with the same settings as the saved super test, for S1-S5:
 # name: (what, scene options, --set values, super_test subfolder, result-file suffixes)
 TESTS = {
     "fresh": ("50 fresh scenes", FRESH, [], "fresh_scenes", ["_hold5_tier1"]),

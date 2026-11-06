@@ -349,8 +349,7 @@ All inside `comp0245_bc/`:
 | `results/` | the results, by report section: `0_old_tests/` (steps to model K), `1_main_models/`, `2_obstacles/`, `3_final_tests/` (fresh scenes, super test); `all_results.xlsx` summarises them |
 | `benchmark/`, `scenes_obstacles/` | the frozen test scenes |
 | `figures/` | figures made by the scripts in section 7 |
-| `docs/` | data format, pre-processing and the super-test decisions |
-| `scripts/` | the shell scripts used on the team's server to run the experiments, kept as a record (their paths are the server's) |
+| `docs/` | `DATA_FORMAT.md`: the contents of each recorded expert-drive file, field by field |
 | `reproduce.sh` | section 1 |
 
 Each code folder has a small `_paths.py` that gives every script the project folder and lets the folders
