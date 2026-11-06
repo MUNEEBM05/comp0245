@@ -157,6 +157,7 @@ generated once (`training/make_benchmark.py`) and must never be regenerated or e
 python3 analysis/report_figures.py       # every report figure -> figures/report/
 python3 analysis/make_figures.py         # the Stage A figures   -> figures/
 python3 analysis/pca_report.py           # PCA of R's inputs     -> figures/pca_inputs.png
+python3 analysis/plot_learning_curves.py # K/P/R/BO learning curves -> figures/learning_curves.pdf (+ _nolabels, _data.csv)
 python3 evaluation/super_table.py        # the super-test table
 python3 evaluation/analyse_failures.py --results results --policies vK_kick vR_ik   # why drives failed
 ```
