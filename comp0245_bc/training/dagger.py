@@ -17,7 +17,7 @@ shadow" alongside the model from the very first step, so its memory evolves on t
 visits: exactly the expert we would get if it were handed the controls at that moment. Its
 controllers are the template's, unchanged.
 
-Recordings use the same file format as expert_episode.py, so train.py and the
+Recordings use the same file format as expert_episode.py (DATA_FORMAT.md), so train.py and the
 feature code read them unchanged. Labels (torque_arm, wheel_cmds, q_des_arm, ...) are the EXPERT's
 commands; the executed commands (the model's, or the expert's when --beta picks it) are stored as
 torque_arm_sent / wheel_cmds_sent. meta["dagger"] = True tells train.py to keep every DAgger run,
