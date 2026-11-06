@@ -1,5 +1,0 @@
-base_path_m,face_err_end_deg,final_err_cm,first_reach_s,goal_dist_end_m,hold_s,index,min_err_cm,outcome,policy,seed,success,think_us_per_step,tier,time_s,torque_jerk,wheel_jerk,wheels_end,yaw_rate_end
-4.983,1.8,1.0,31.983,0.122,0.0,0,1.0,reached,planner_expert,330005,True,90.7,13,31.983,0.3733,0.0172,0.0,0.0
-4.716,2.7,1.0,30.397,0.078,0.0,1,1.0,reached,planner_expert,330007,True,101.3,13,30.397,0.3136,0.0164,0.0,0.0
-4.368,2.1,1.0,28.281,0.192,0.0,2,1.0,reached,planner_expert,330009,True,94.7,13,28.281,0.3122,0.0182,0.016,0.018
-5.238,2.7,1.0,34.76,0.078,0.0,3,1.0,reached,planner_expert,330011,True,69.0,13,34.76,0.3237,0.0148,0.0,0.0
