@@ -2,12 +2,12 @@
 # One command to check and reproduce the report. Run it from this folder, inside RoboEnv's pixi shell
 # (README, section 1):
 #
-#   ./reproduce.sh check   (~10 s)   setup check, every trained model loads, and every number in the
+#   bash reproduce.sh check   (~10 s)   setup check, every trained model loads, and every number in the
 #                                    report is recounted from the saved per-scene result files
-#   ./reproduce.sh quick   (~5 min)  check + rerun K, R, the BO network + Kalman filter and the final
+#   bash reproduce.sh quick   (~5 min)  check + rerun K, R, the BO network + Kalman filter and the final
 #                                    system S3 on the first 10 scenes, compared scene by scene with the
 #                                    saved results
-#   ./reproduce.sh full    (~3 h)    check + rerun the final system S3 on the whole super test (500 trials,
+#   bash reproduce.sh full    (~3 h)    check + rerun the final system S3 on the whole super test (500 trials,
 #                                    the same commands as the original), scored by evaluation/super_table.py
 #
 # Reruns go to results/reproduced/ and never overwrite the saved results. Set WORKERS=8 to use more cores.
@@ -17,7 +17,7 @@ PY=${PY:-python3}
 WORKERS=${WORKERS:-4}
 OUT=results/reproduced
 MODE=${1:-check}
-case "$MODE" in check|quick|full) ;; *) echo "usage: ./reproduce.sh [check|quick|full]"; exit 2;; esac
+case "$MODE" in check|quick|full) ;; *) echo "usage: bash reproduce.sh [check|quick|full]"; exit 2;; esac
 
 line() { printf '\n== %s\n' "$*"; }
 fail() { echo "STOP: $*"; exit 1; }

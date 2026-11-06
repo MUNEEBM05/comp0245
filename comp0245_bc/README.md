@@ -22,14 +22,14 @@ Team: Muneeb Musharaf, David Wild, Abdullah Qureshi.
 ln -s /path/to/RoboEnv/models models
 pixi shell --manifest-path /path/to/RoboEnv/pixi.toml
 
-./reproduce.sh check    # ~10 s : setup, every model loads, every report number recounted from the result files
-./reproduce.sh quick    # ~5 min : also reruns K, R, the BO network and the final system on 10 scenes each
-./reproduce.sh full     # ~3 h  : also reruns the final system on the whole super test (500 trials)
+bash reproduce.sh check    # ~10 s : setup, every model loads, every report number recounted from the result files
+bash reproduce.sh quick    # ~5 min : also reruns K, R, the BO network and the final system on 10 scenes each
+bash reproduce.sh full     # ~3 h  : also reruns the final system on the whole super test (500 trials)
 ```
 
 `check` prints each number the report quotes next to the value counted from its result file, with the
 file's path, and rebuilds the super-test table (S1–S5). `quick` and `full` write their reruns to
-`results/reproduced/` and never touch the saved results. Use `WORKERS=8 ./reproduce.sh quick` for more cores.
+`results/reproduced/` and never touch the saved results. Use `WORKERS=8 bash reproduce.sh quick` for more cores.
 None of this needs the recorded training data (`data/`).
 
 ## 2. Setup
@@ -78,7 +78,7 @@ learned Driver A (model A) plus brake, `cam:planner:<arm>` the camera version wi
 | Final models: no true position, learned driver and arm | `navigation/eval_selfnav.py --mode cam` (section 4) | `2_obstacles/abdullah_bases/stage6_camera_and_odometry/` |
 
 `analysis/report_numbers.py` checks every number in this table against its file (it is step 3 of
-`./reproduce.sh check`). `results/all_results.xlsx` is a fixed summary of all results, including the
+`bash reproduce.sh check`). `results/all_results.xlsx` is a fixed summary of all results, including the
 pivot table behind the super-test chart; the script that first built it was removed with the experiments
 the report does not use, and `evaluation/super_table.py` rebuilds the super-test numbers on its own.
 
