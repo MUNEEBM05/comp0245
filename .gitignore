@@ -7,3 +7,5 @@ comp0245_bc/comp0245_data/
 comp0245_bc/trained/gp_R.pkl
 ~$*
 *:Zone.Identifier
+comp0245_bc/results/reproduced/
+comp0245_bc/results/new_runs/

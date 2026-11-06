@@ -1,7 +1,14 @@
-"""Build the super-test table straight from the CSV success columns."""
+"""Build the super-test table straight from the CSV success columns.
+
+    python3 evaluation/super_table.py                                   # the saved super test
+    python3 evaluation/super_table.py --dir results/reproduced/super_test   # a rerun made by reproduce.sh
+"""
 from _paths import ROOT, find_result  # noqa: F401  (project folder; lets the code folders import each other)
-import csv, os, sys
-R = os.path.join(ROOT, "results", "3_final_tests", "super_test")
+import argparse, csv, os, sys
+ap = argparse.ArgumentParser()
+ap.add_argument("--dir", default=os.path.join(ROOT, "results", "3_final_tests", "super_test"),
+                help="folder with fresh_scenes/, benchmark_tiers/ and obstacles/ subfolders")
+R = ap.parse_args().dir
 SYS = [("S1 expert + planner (ceiling)", "planner_expert"), ("S2 BO+KF + our nav", "bo_t03_kfv_nav"),
        ("S3 BO+KF + Abdullah planner", "planner_bo_t03_kfv"), ("S4 BO+KF + Driver A (brake)", "driverbrake_driver_A_bo_t03_kfv"),
        ("S5 BO+KF + planner + camera", "selfnav_cam_planner_bo_t03_kfv")]
@@ -25,6 +32,8 @@ def score(d, pats, n):
 out = []
 for lab, n in SYS:
     v = [score(d, p, n) for _, d, p in COLS]
+    if not any(v):
+        continue                       # a system that was not run (e.g. a partial rerun)
     row = [lab] + [("%.0f" % x[0]) if x else "-" for x in v]
     for st, idx in STAGES.items():
         xs = [v[i][0] for i in idx if v[i]]
@@ -34,3 +43,5 @@ for lab, n in SYS:
 hdr = ["System"] + [c[0] for c in COLS] + list(STAGES) + ["Overall"]
 print(" | ".join(hdr))
 for r in out: print(" | ".join(r))
+if not out:
+    sys.exit(f"no super-test results found in {R}")
